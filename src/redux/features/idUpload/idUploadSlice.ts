@@ -5,6 +5,7 @@ export interface IdUploadState {
   faceImage?: string;
   extracting: boolean;
   extractError: string | null;
+  previewUrl?: string; // <-- add this
 }
 
 const initialState: IdUploadState = {
@@ -12,6 +13,7 @@ const initialState: IdUploadState = {
   faceImage: undefined,
   extracting: false,
   extractError: null,
+  previewUrl: undefined, // <-- add this
 };
 
 const idUploadSlice = createSlice({
@@ -30,11 +32,15 @@ const idUploadSlice = createSlice({
     setExtractError(state, action: PayloadAction<string | null>) {
       state.extractError = action.payload;
     },
+    setPreviewUrl(state, action: PayloadAction<string | undefined>) {
+      state.previewUrl = action.payload;
+    },
     resetIdUpload(state) {
       state.identityDocumentFile = undefined;
       state.faceImage = undefined;
       state.extracting = false;
       state.extractError = null;
+      state.previewUrl = undefined;
     },
   },
 });
@@ -44,6 +50,7 @@ export const {
   setFaceImage,
   setExtracting,
   setExtractError,
+  setPreviewUrl, // <-- export this
   resetIdUpload,
 } = idUploadSlice.actions;
 
@@ -56,5 +63,7 @@ export const selectExtracting = (state: { idUpload: IdUploadState }) =>
   state.idUpload.extracting;
 export const selectExtractError = (state: { idUpload: IdUploadState }) =>
   state.idUpload.extractError;
+export const selectPreviewUrl = (state: { idUpload: IdUploadState }) =>
+  state.idUpload.previewUrl;
 
 export default idUploadSlice.reducer;

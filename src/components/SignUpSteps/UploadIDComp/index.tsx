@@ -11,11 +11,13 @@ import {
   selectFaceImage,
   selectExtracting,
   selectExtractError,
-} from "../../../store/idUploadSlice";
+  setPreviewUrl,
+  selectPreviewUrl,
+} from "../../../redux/features/idUpload/idUploadSlice";
 import {
   setCurrentStep,
   selectCurrentStep,
-} from "../../../store/stepSlice";
+} from "../../../redux/features/signUpSteps/stepSlice";
 import { toast } from "react-toastify";
 import { useExtractFaceFromDoc } from "../../../utils/hooks/ExtractFaceFromDoc";
 import Loader from "../../Loader";
@@ -27,22 +29,39 @@ const UploadIDComp: React.FC = () => {
   const extracting = useSelector(selectExtracting);
   const extractError = useSelector(selectExtractError);
   const currentStep = useSelector(selectCurrentStep);
+  const previewUrl = useSelector(selectPreviewUrl);
 
-  const [preview, setPreview] = React.useState<string | undefined>(undefined);
+  const [lastUploadedFile, setLastUploadedFile] = React.useState<
+    File | undefined
+  >(undefined);
 
   const { extractFace, loading } = useExtractFaceFromDoc();
 
   useEffect(() => {
     if (identityDocumentFile) {
-      setPreview(
-        identityDocumentFile.type.startsWith("image/")
+      // Only update preview and clear face image if file changed
+      if (
+        lastUploadedFile === undefined ||
+        (identityDocumentFile && identityDocumentFile !== lastUploadedFile)
+      ) {
+        const url = identityDocumentFile.type.startsWith("image/")
           ? URL.createObjectURL(identityDocumentFile)
-          : identityDocumentFile.name
-      );
+          : identityDocumentFile.name;
+        dispatch(setPreviewUrl(url));
+        // Only reset face image if a new file is uploaded (not on remount)
+        dispatch(setFaceImage(undefined));
+        dispatch(setExtractError(null));
+        setLastUploadedFile(identityDocumentFile);
+      }
+      // Do NOT clear face image if file is the same (e.g., navigating back or remount)
     } else {
-      setPreview(undefined);
+      dispatch(setPreviewUrl(undefined));
+      setLastUploadedFile(undefined);
+      dispatch(setFaceImage(undefined));
+      dispatch(setExtractError(null));
     }
-  }, [identityDocumentFile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identityDocumentFile, dispatch, lastUploadedFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (extracting || loading) return;
@@ -50,14 +69,15 @@ const UploadIDComp: React.FC = () => {
     if (selected) {
       if (selected.type === "image/jpeg" || selected.type === "image/jpg") {
         dispatch(setIdentityDocumentFile(selected));
-        dispatch(setFaceImage(undefined));
-        dispatch(setExtractError(null));
+        // All states (face image, error, etc.) will be reset by useEffect above
       } else {
-        setPreview(undefined);
+        dispatch(setPreviewUrl(undefined));
+        dispatch(setIdentityDocumentFile(undefined));
+        dispatch(setFaceImage(undefined));
         dispatch(setExtractError("Only JPEG image files are allowed."));
       }
     } else {
-      setPreview(undefined);
+      dispatch(setPreviewUrl(undefined));
       dispatch(setIdentityDocumentFile(undefined));
       dispatch(setFaceImage(undefined));
       dispatch(setExtractError(null));
@@ -91,6 +111,9 @@ const UploadIDComp: React.FC = () => {
     dispatch(setCurrentStep(currentStep + 1));
   };
 
+  useEffect(() => {
+    console.log(faceImage);
+  }, []);
   return (
     <div className="flex flex-col items-center">
       <label className="block font-medium mb-2 text-gray-700">
@@ -124,54 +147,16 @@ const UploadIDComp: React.FC = () => {
             disabled={extracting || loading}
           />
         </label>
-        {preview &&
-          (identityDocumentFile?.type.startsWith("image/") ? (
+        {previewUrl &&
+          (identityDocumentFile?.type?.startsWith("image/") ? (
             <img
-              src={preview}
+              src={previewUrl}
               alt="Identity Document Preview"
               className="w-16 h-16 object-cover rounded border border-gray-300"
             />
           ) : (
-            <span className="text-gray-700">{preview}</span>
+            <span className="text-gray-700">{previewUrl}</span>
           ))}
-      </div>
-      <div className="flex gap-3 mb-2">
-        <button
-          type="button"
-          onClick={handleExtractFace}
-          disabled={extracting || loading || !identityDocumentFile}
-          className={`px-6 py-2 rounded shadow transition font-semibold ${
-            extracting || loading || !identityDocumentFile
-              ? "bg-blue-300 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          Extract
-        </button>
-        <button
-          type="button"
-          onClick={handleExtractFace}
-          disabled={extracting || loading || !identityDocumentFile}
-          className={`px-6 py-2 rounded shadow transition font-semibold ${
-            extracting || loading || !identityDocumentFile
-              ? "bg-yellow-300 text-white cursor-not-allowed"
-              : "bg-yellow-500 text-white hover:bg-yellow-600"
-          }`}
-        >
-          Re-extract
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!faceImage}
-          className={`px-6 py-2 rounded shadow transition font-semibold ${
-            !faceImage
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
-          }`}
-        >
-          Next
-        </button>
       </div>
       {loading && <Loader />}
       {extractError && <div className="text-red-500 mb-2">{extractError}</div>}
@@ -185,8 +170,47 @@ const UploadIDComp: React.FC = () => {
           />
         </div>
       )}
+      <div className="flex gap-3 mb-2">
+        <button
+          type="button"
+          onClick={handleExtractFace}
+          disabled={extracting || loading || !identityDocumentFile}
+          className={`px-6 py-2 rounded shadow transition font-semibold ${
+            extracting || loading || !identityDocumentFile
+              ? "bg-blue-300 text-white cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          Extract
+        </button>
+        {faceImage && identityDocumentFile === lastUploadedFile && (
+          <button
+            type="button"
+            onClick={handleExtractFace}
+            disabled={extracting || loading || !identityDocumentFile}
+            className={`px-6 py-2 rounded shadow transition font-semibold ${
+              extracting || loading || !identityDocumentFile
+                ? "bg-yellow-300 text-white cursor-not-allowed"
+                : "bg-yellow-500 text-white hover:bg-yellow-600"
+            }`}
+          >
+            Re-extract
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!faceImage}
+          className={`px-6 py-2 rounded shadow transition font-semibold ${
+            !faceImage
+              ? "bg-green-300 text-white cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700"
+          }`}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };
-
 export default UploadIDComp;

@@ -2,11 +2,13 @@
 
 import React from "react";
 import UploadIDComp from "../SignUpSteps/UploadIDComp";
+import DataExtractDocComp from "../SignUpSteps/DataExtractDocComp";
 import { useSelector } from "react-redux";
-import { selectCurrentStep } from "../../store/stepSlice";
+import { selectCurrentStep } from "../../redux/features/signUpSteps/stepSlice";
 
 const steps = [
   { label: "Identity Document" },
+  { label: "Extract Data" },
   // Add more steps here as you implement them
 ];
 
@@ -46,6 +48,7 @@ const SignUpFormComponent: React.FC = () => {
       {/* Step Content */}
       <div className="bg-white rounded-xl shadow-lg p-8">
         {currentStep === 0 && <UploadIDComp />}
+        {currentStep === 1 && <DataExtractDocComp />}
         {/* Add more steps here as you implement them */}
       </div>
     </div>

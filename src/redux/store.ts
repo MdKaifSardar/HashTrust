@@ -1,11 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
-import idUploadReducer from "./idUploadSlice";
-import stepReducer from "./stepSlice";
+import idUploadReducer from "./features/idUpload/idUploadSlice";
+import stepReducer from "./features/signUpSteps/stepSlice";
+import userDataReducer from "./features/userData/userDataSlice";
+import userImageReducer from "./features/userImage/userImageSlice";
 
 export const store = configureStore({
   reducer: {
     idUpload: idUploadReducer,
     step: stepReducer,
+    userData: userDataReducer,
+    userImage: userImageReducer,
   },
 });
 
