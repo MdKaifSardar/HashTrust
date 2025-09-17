@@ -3,6 +3,7 @@ import idUploadReducer from "./features/idUpload/idUploadSlice";
 import stepReducer from "./features/signUpSteps/stepSlice";
 import userDataReducer from "./features/userData/userDataSlice";
 import userImageReducer from "./features/userImage/userImageSlice";
+import faceSimilarityCheckReducer from "./features/faceSimilarityCheckSlice/faceSImilarityCheckSlice"; // <-- add this
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     step: stepReducer,
     userData: userDataReducer,
     userImage: userImageReducer,
+    faceSimilarityCheck: faceSimilarityCheckReducer, // <-- add this
   },
 });
 

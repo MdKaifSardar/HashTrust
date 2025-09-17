@@ -3,12 +3,22 @@
 import React from "react";
 import UploadIDComp from "../SignUpSteps/UploadIDComp";
 import DataExtractDocComp from "../SignUpSteps/DataExtractDocComp";
+import TakeUserImagesComp from "../SignUpSteps/TakeUserImagesComp";
+import FaceSimilarityCheck from "../SignUpSteps/FaceSimilarityCheck";
+import CreatePasswordComp from "../SignUpSteps/CreatePasswordComp";
+import ReviewDataComp from "../SignUpSteps/ReviewDataComp";
 import { useSelector } from "react-redux";
 import { selectCurrentStep } from "../../redux/features/signUpSteps/stepSlice";
+import { ToastContainer } from "react-toastify";
+import Link from "next/link";
 
 const steps = [
-  { label: "Identity Document" },
+  { label: "ID Document" },
   { label: "Extract Data" },
+  { label: "User Images" },
+  { label: "Face Similarity" },
+  { label: "Email and Password" }, // <-- add password step
+  { label: "Review Data" },
   // Add more steps here as you implement them
 ];
 
@@ -16,7 +26,15 @@ const SignUpFormComponent: React.FC = () => {
   const currentStep = useSelector(selectCurrentStep);
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-[70%] mx-auto">
+      <div className="absolute top-4 left-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-blue-700 hover:text-cyan-500 font-semibold text-base"
+        >
+          <span className="text-xl">&#8592;</span> Back to Home
+        </Link>
+      </div>
       {/* Progress Bar */}
       <div className="flex items-center mb-8">
         {steps.map((step, idx) => (
@@ -47,8 +65,13 @@ const SignUpFormComponent: React.FC = () => {
       </div>
       {/* Step Content */}
       <div className="bg-white rounded-xl shadow-lg p-8">
+        <ToastContainer />
         {currentStep === 0 && <UploadIDComp />}
         {currentStep === 1 && <DataExtractDocComp />}
+        {currentStep === 2 && <TakeUserImagesComp />}
+        {currentStep === 3 && <FaceSimilarityCheck />}
+        {currentStep === 4 && <CreatePasswordComp />} {/* <-- password step */}
+        {currentStep === 5 && <ReviewDataComp />} {/* <-- review step */}
         {/* Add more steps here as you implement them */}
       </div>
     </div>

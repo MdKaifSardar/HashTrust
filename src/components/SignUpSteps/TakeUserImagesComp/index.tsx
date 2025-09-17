@@ -1,153 +1,263 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setImages, resetImages, selectUserImages } from "../../../redux/features/userImage/userImageSlice";
-import { setCurrentStep, selectCurrentStep } from "../../../redux/features/signUpSteps/stepSlice";
+import {
+  setImage,
+  setUserImagePreview,
+  setLatestUserImagePreview, // <-- import this
+  setFaceLiveness,
+  resetImages,
+  selectUserImage,
+  selectUserImagePreview,
+  selectLatestUserImagePreview, // <-- import this
+  selectFaceLiveness,
+  selectFaceLivenessScore,
+} from "../../../redux/features/userImage/userImageSlice";
+import {
+  setCurrentStep,
+  selectCurrentStep,
+} from "../../../redux/features/signUpSteps/stepSlice";
+import { useLivenessDetector } from "../../../utils/hooks/LivenessDetector";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { resetFaceSimilarityCheck } from "@/redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
 
 const TakeUserImagesComp: React.FC = () => {
   const dispatch = useDispatch();
-  const images = useSelector(selectUserImages);
+  const image = useSelector(selectUserImage);
+  const userImagePreview = useSelector(selectUserImagePreview);
+  const latestUserImagePreview = useSelector(selectLatestUserImagePreview);
+  const faceLiveness = useSelector(selectFaceLiveness);
+  const faceLivenessScore = useSelector(selectFaceLivenessScore);
   const currentStep = useSelector(selectCurrentStep);
 
   const [capturing, setCapturing] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const {
+    loading: livenessLoading,
+    error: livenessError,
+    checkLiveness,
+  } = useLivenessDetector();
 
   // Start camera
   const startCamera = async () => {
     if (cameraOn) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
       streamRef.current = stream;
       setCameraOn(true);
     } catch {
-      alert("Unable to access camera.");
+      toast.error(
+        "Unable to access camera. Please allow camera permission and retry."
+      );
     }
   };
 
   // Stop camera
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
     setCameraOn(false);
+    if (videoRef.current) videoRef.current.srcObject = null;
   };
 
-  // Capture a single image from the video stream
-  const captureImage = (): string | null => {
-    if (!videoRef.current) return null;
+  // Draw current video frame to canvas
+  const captureFrameToCanvas = () => {
     const video = videoRef.current;
+    if (!video) return null;
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 320;
     canvas.height = video.videoHeight || 240;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg");
+    return { canvas, width: canvas.width, height: canvas.height };
   };
 
-  // Take 3 images, 2s apart
-  const takeThreeImages = async () => {
+  // Return a JPEG base64 of the current frame
+  const captureImage = (): string | null => {
+    const fc = captureFrameToCanvas();
+    if (!fc) return null;
+    return fc.canvas.toDataURL("image/jpeg", 0.92);
+  };
+
+  // Take image and check liveness
+  // Take image and check liveness
+  const handleTakePhoto = async () => {
+    if (capturing || livenessLoading) return;
     setCapturing(true);
-    dispatch(resetImages());
-    const newImages: string[] = [];
-    for (let i = 0; i < 3; i++) {
-      await new Promise((resolve) => setTimeout(resolve, i === 0 ? 500 : 2000));
+
+    try {
       const img = captureImage();
-      if (img) newImages.push(img);
-      dispatch(setImages([...newImages]));
+      if (!img) {
+        toast.error("Failed to capture image.");
+        setCapturing(false);
+        return;
+      }
+
+      // 🔹 First time -> update both states
+      if (!image) {
+        dispatch(setImage(img));
+        dispatch(setUserImagePreview(img));
+        dispatch(setLatestUserImagePreview(img));
+      } else {
+        // 🔹 On retake -> update only latest
+        dispatch(setLatestUserImagePreview(img));
+      }
+
+      dispatch(resetFaceSimilarityCheck());
+
+      toast.success("Photo captured.");
+      stopCamera(); // Stop camera immediately after photo is taken
+
+      // Convert base64 to File for liveness check
+      const arr = img.split(",");
+      const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) u8arr[n] = bstr.charCodeAt(n);
+      const file = new File([u8arr], "user-image.jpg", { type: mime });
+
+      // Await liveness check and only then update UI/state
+      const liveness = await checkLiveness(file);
+      dispatch(setFaceLiveness(liveness));
+
+      if (liveness.isLive) {
+        toast.success(`Face is LIVE! Realness Score: ${liveness.score}/10`);
+      } else {
+        toast.error("Face is NOT LIVE. Please retake the photo.");
+      }
+    } catch (e: any) {
+      toast.error("Liveness check failed.");
+    } finally {
+      setCapturing(false);
     }
-    setCapturing(false);
   };
 
-  // Retake images
+  // Retake image
   const handleRetake = () => {
     dispatch(resetImages());
-    takeThreeImages();
+    startCamera();
   };
 
-  // Proceed to next step
-  const handleNext = () => {
-    if (images.length === 3) {
-      stopCamera();
-      dispatch(setCurrentStep(currentStep + 1));
-    }
-  };
-
-  // Go back to previous step
-  const handleBack = () => {
+  // Prev button
+  const handlePrev = () => {
     stopCamera();
     dispatch(setCurrentStep(currentStep - 1));
   };
 
-  // Start camera on mount if not already on
-  React.useEffect(() => {
-    startCamera();
+  // Next button
+  const handleNext = () => {
+    stopCamera();
+    dispatch(setCurrentStep(currentStep + 1));
+  };
+
+  useEffect(() => {
+    if (!image) startCamera();
     return () => {
       stopCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Automatically take images if camera is on and not capturing and no images yet
-  React.useEffect(() => {
-    if (cameraOn && !capturing && images.length === 0) {
-      takeThreeImages();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraOn]);
+  const disableAll = capturing || livenessLoading;
 
   return (
     <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow flex flex-col items-center">
-      <h2 className="text-2xl font-bold mb-4 text-blue-700">Take Your Photos</h2>
+      <ToastContainer position="top-right" />
+      <h2 className="text-2xl font-bold mb-4 text-blue-700">Take Your Photo</h2>
+
       <div className="mb-4">
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          className={`rounded border border-gray-300 ${cameraOn ? "" : "hidden"}`}
+          muted
+          className={`rounded border border-gray-300 ${
+            cameraOn && !image ? "" : "hidden"
+          }`}
           width={320}
           height={240}
         />
+        {!cameraOn && !image && (
+          <div className="text-sm text-gray-500 mt-2">Camera is off.</div>
+        )}
       </div>
+
       <div className="flex gap-4 mb-4">
-        {images.map((img, idx) => (
+        {userImagePreview && (
           <img
-            key={idx}
-            src={img}
-            alt={`User ${idx + 1}`}
-            className="w-24 h-24 object-cover rounded border border-gray-400"
+            src={userImagePreview}
+            alt="User Preview"
+            className="w-32 h-32 object-cover rounded border border-gray-400"
           />
-        ))}
+        )}
       </div>
+
+      {livenessError && (
+        <div className="text-red-500 mb-2">{livenessError}</div>
+      )}
+
+      {faceLiveness !== null && (
+        <div className="mb-4">
+          <div className="text-lg font-semibold">
+            Face is{" "}
+            {faceLiveness ? (
+              <span className="text-green-600">LIVE</span>
+            ) : (
+              <span className="text-red-600">NOT LIVE</span>
+            )}
+          </div>
+          <div className="text-sm text-gray-700">
+            Realness Score:{" "}
+            <span className="font-mono">{faceLivenessScore}/10</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-4 mt-4">
         <button
           type="button"
-          onClick={handleBack}
-          className="px-6 py-2 rounded shadow font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleRetake}
-          disabled={capturing}
+          onClick={handlePrev}
+          disabled={disableAll}
           className={`px-6 py-2 rounded shadow font-semibold ${
-            capturing
-              ? "bg-yellow-300 text-white cursor-not-allowed"
-              : "bg-yellow-500 text-white hover:bg-yellow-600"
+            disableAll
+              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
         >
-          Retake
+          Prev
         </button>
+
+        <button
+          type="button"
+          onClick={image ? handleRetake : handleTakePhoto}
+          disabled={disableAll}
+          className={`px-6 py-2 rounded shadow font-semibold ${
+            disableAll
+              ? "bg-blue-300 text-white cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          {image ? "Retake" : "Take Image"}
+        </button>
+
         <button
           type="button"
           onClick={handleNext}
-          disabled={images.length !== 3 || capturing}
+          disabled={disableAll || !image || !faceLiveness}
           className={`px-6 py-2 rounded shadow font-semibold ${
-            images.length !== 3 || capturing
+            disableAll || !image || !faceLiveness
               ? "bg-green-300 text-white cursor-not-allowed"
               : "bg-green-600 text-white hover:bg-green-700"
           }`}
@@ -155,12 +265,15 @@ const TakeUserImagesComp: React.FC = () => {
           Next
         </button>
       </div>
+
       <div className="mt-4 text-gray-500 text-sm">
         {capturing
-          ? "Capturing images..."
-          : images.length === 3
-          ? "All images captured. You can proceed or retake."
-          : "Images will be captured automatically."}
+          ? "Working..."
+          : livenessLoading
+          ? "Checking face liveness..."
+          : !image
+          ? "Position your face clearly in the frame and click 'Take Image'."
+          : "Image captured. You can retake or proceed if face is LIVE."}
       </div>
     </div>
   );

@@ -13,6 +13,8 @@ import {
   selectExtractError,
   setPreviewUrl,
   selectPreviewUrl,
+  setLastUploadedFile,
+  selectLastUploadedFile,
 } from "../../../redux/features/idUpload/idUploadSlice";
 import {
   setCurrentStep,
@@ -30,10 +32,7 @@ const UploadIDComp: React.FC = () => {
   const extractError = useSelector(selectExtractError);
   const currentStep = useSelector(selectCurrentStep);
   const previewUrl = useSelector(selectPreviewUrl);
-
-  const [lastUploadedFile, setLastUploadedFile] = React.useState<
-    File | undefined
-  >(undefined);
+  const lastUploadedFile = useSelector(selectLastUploadedFile);
 
   const { extractFace, loading } = useExtractFaceFromDoc();
 
@@ -44,19 +43,21 @@ const UploadIDComp: React.FC = () => {
         lastUploadedFile === undefined ||
         (identityDocumentFile && identityDocumentFile !== lastUploadedFile)
       ) {
-        const url = identityDocumentFile.type.startsWith("image/")
-          ? URL.createObjectURL(identityDocumentFile)
-          : identityDocumentFile.name;
-        dispatch(setPreviewUrl(url));
-        // Only reset face image if a new file is uploaded (not on remount)
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          dispatch(setPreviewUrl(base64)); // <-- now it's data:image/... base64
+        };
+        reader.readAsDataURL(identityDocumentFile);
+
         dispatch(setFaceImage(undefined));
         dispatch(setExtractError(null));
-        setLastUploadedFile(identityDocumentFile);
+        dispatch(setLastUploadedFile(identityDocumentFile));
       }
       // Do NOT clear face image if file is the same (e.g., navigating back or remount)
     } else {
       dispatch(setPreviewUrl(undefined));
-      setLastUploadedFile(undefined);
+      dispatch(setLastUploadedFile(undefined));
       dispatch(setFaceImage(undefined));
       dispatch(setExtractError(null));
     }
@@ -102,7 +103,9 @@ const UploadIDComp: React.FC = () => {
       return;
     }
     if (result.message) toast.success(result.message);
-    if (result.faceUrl) dispatch(setFaceImage(result.faceUrl));
+    if (result.faceUrl) {
+      dispatch(setFaceImage(result.faceUrl));
+    }
     dispatch(setExtracting(false));
   };
 
@@ -110,10 +113,6 @@ const UploadIDComp: React.FC = () => {
     if (!faceImage) return;
     dispatch(setCurrentStep(currentStep + 1));
   };
-
-  useEffect(() => {
-    console.log(faceImage);
-  }, []);
   return (
     <div className="flex flex-col items-center">
       <label className="block font-medium mb-2 text-gray-700">
@@ -170,6 +169,7 @@ const UploadIDComp: React.FC = () => {
           />
         </div>
       )}
+      {/* Always display extracted face image if available */}
       <div className="flex gap-3 mb-2">
         <button
           type="button"

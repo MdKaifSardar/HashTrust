@@ -3,10 +3,12 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { compareFacesAction } from "@/lib/actions/faceSimilarity.actions";
 
 type ApiSuccess = {
-  similarity: number;
-  same_person: boolean;
+  confidence: number;
+  ok: boolean;
+  message: string;
 };
 
 export default function FaceSimilarityPage() {
@@ -24,45 +26,34 @@ export default function FaceSimilarityPage() {
     }
 
     const formData = new FormData();
-    formData.append("main_photo", mainPhoto);
-    formData.append("test_photo", testPhoto);
+    formData.append("image1", mainPhoto);
+    formData.append("image2", testPhoto);
 
     try {
       setLoading(true);
       setResult(null);
 
-      const res = await fetch("http://localhost:8080/api/v1/face/check-human", {
-        method: "POST",
-        body: formData,
-        cache: "no-store",
-      });
+      const data = await compareFacesAction(formData);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        // HTTP error
-        throw new Error(data?.detail || "Failed to check similarity");
-      }
-
-      if (data?.error) {
-        // API returned an error payload
-        toast.error(data.error);
+      if (!data.ok) {
+        toast.error(data.message || "Failed to check similarity");
         setResult(null);
         return;
       }
 
-      // Expecting { similarity: number, same_person: boolean }
-      const parsed: ApiSuccess = {
-        similarity: Number(data.similarity),
-        same_person: Boolean(data.same_person),
-      };
-      setResult(parsed);
+      if (typeof data.confidence === "number") {
+        setResult({
+          ok: data.ok,
+          message: data.message,
+          confidence: data.confidence,
+        });
 
-      toast.success(
-        `Done! Similarity: ${parsed.similarity.toFixed(3)} — ${
-          parsed.same_person ? "Same person" : "Different person"
-        }`
-      );
+        toast.success(
+          `Done! Confidence: ${data.confidence} — ${
+            data.confidence > 80 ? "Likely same person" : "Different person"
+          }`
+        );
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
@@ -78,7 +69,7 @@ export default function FaceSimilarityPage() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
       <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-lg">
         <h1 className="text-2xl font-bold mb-4 text-center">
-          Face Similarity Check
+          Face Similarity Check (Face++)
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -130,20 +121,23 @@ export default function FaceSimilarityPage() {
         {result && (
           <div className="mt-6 p-4 border rounded-lg bg-gray-50">
             <div className="flex items-center justify-between">
-              <span className="text-gray-700 font-semibold">Same person?</span>
+              <span className="text-gray-700 font-semibold">Result</span>
               <span
                 className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  result.same_person
+                  result.confidence > 80
                     ? "bg-green-100 text-green-700"
                     : "bg-red-100 text-red-700"
                 }`}
               >
-                {result.same_person ? "Yes" : "No"}
+                {result.confidence > 80 ? "Likely Same Person" : "Different Person"}
               </span>
             </div>
             <div className="mt-2 text-gray-700">
-              <span className="font-semibold">Similarity:</span>{" "}
-              {result.similarity.toFixed(3)}
+              <span className="font-semibold">Confidence:</span>{" "}
+              {result.confidence}
+            </div>
+            <div className="mt-2 text-gray-500 text-xs">
+              {result.message}
             </div>
           </div>
         )}

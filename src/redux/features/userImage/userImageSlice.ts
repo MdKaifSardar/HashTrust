@@ -1,26 +1,52 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface UserImageState {
-  images: string[]; // base64 or object URLs
+  image: string | null; // single image (base64 or object URL)
+  userImagePreview?: string; // <-- add this
+  latestUserImagePreview?: string; // <-- add this
+  faceLiveness: boolean | null;
+  faceLivenessScore: number | null;
 }
 
 const initialState: UserImageState = {
-  images: [],
+  image: null,
+  userImagePreview: undefined, // <-- add this
+  latestUserImagePreview: undefined, // <-- add this
+  faceLiveness: null,
+  faceLivenessScore: null,
 };
 
 const userImageSlice = createSlice({
   name: "userImage",
   initialState,
   reducers: {
-    setImages(state, action: PayloadAction<string[]>) {
-      state.images = action.payload;
+    setImage(state, action: PayloadAction<string>) {
+      state.image = action.payload;
+    },
+    setUserImagePreview(state, action: PayloadAction<string | undefined>) { // <-- add this
+      state.userImagePreview = action.payload;
+    },
+    setLatestUserImagePreview(state, action: PayloadAction<string | undefined>) { // <-- add this
+      state.latestUserImagePreview = action.payload;
+    },
+    setFaceLiveness(state, action: PayloadAction<{ isLive: boolean; score: number }>) {
+      state.faceLiveness = action.payload.isLive;
+      state.faceLivenessScore = action.payload.score;
     },
     resetImages(state) {
-      state.images = [];
+      state.image = null;
+      state.userImagePreview = undefined; // <-- reset this
+      state.latestUserImagePreview = undefined; // <-- reset this
+      state.faceLiveness = null;
+      state.faceLivenessScore = null;
     },
   },
 });
 
-export const { setImages, resetImages } = userImageSlice.actions;
-export const selectUserImages = (state: { userImage: UserImageState }) => state.userImage.images;
+export const { setImage, setUserImagePreview, setLatestUserImagePreview, setFaceLiveness, resetImages } = userImageSlice.actions;
+export const selectUserImage = (state: { userImage: UserImageState }) => state.userImage.image;
+export const selectUserImagePreview = (state: { userImage: UserImageState }) => state.userImage.userImagePreview;
+export const selectLatestUserImagePreview = (state: { userImage: UserImageState }) => state.userImage.latestUserImagePreview; // <-- selector
+export const selectFaceLiveness = (state: { userImage: UserImageState }) => state.userImage.faceLiveness;
+export const selectFaceLivenessScore = (state: { userImage: UserImageState }) => state.userImage.faceLivenessScore;
 export default userImageSlice.reducer;

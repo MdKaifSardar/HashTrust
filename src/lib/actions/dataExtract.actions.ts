@@ -80,7 +80,7 @@ export async function extractUserDataWithGemini(
       ],
     });
   } catch (err) {
-    throw new Error("Failed to call Gemini API: " + String(err));
+    throw new Error("Could not extract data from the document. Please try again later.");
   }
 
   const textPromise = result.response.text();
@@ -117,8 +117,7 @@ export async function extractUserDataWithGemini(
       },
     };
   } catch (e) {
-    const raw_output = await textPromise;
-    throw new Error("Failed to parse response from Gemini: " + raw_output);
+    throw new Error("Could not understand the document. Please upload a clear image of your ID.");
   }
 
   // Check for missing data
@@ -131,7 +130,7 @@ export async function extractUserDataWithGemini(
     !extracted.address.state ||
     !extracted.address.pin
   ) {
-    throw new Error("Data missing from the document");
+    throw new Error("Some required fields could not be extracted. Please try another document or a clearer image.");
   }
 
   return extracted;

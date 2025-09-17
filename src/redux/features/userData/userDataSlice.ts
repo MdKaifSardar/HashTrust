@@ -11,41 +11,45 @@ export interface UserDataState {
   name: string | null;
   dob: string | null;
   phone: string | null;
+  email?: string | null; // <-- add this
   address: UserAddress;
+  password?: string | null;
 }
 
 const initialState: UserDataState = {
   name: null,
   dob: null,
   phone: null,
+  email: null, // <-- add this
   address: {
     po: null,
     district: null,
     state: null,
     pin: null,
   },
+  password: null,
 };
 
 const userDataSlice = createSlice({
   name: "userData",
   initialState,
   reducers: {
-    setUserData(state, action: PayloadAction<UserDataState>) {
-      state.name = action.payload.name;
-      state.dob = action.payload.dob;
-      state.phone = action.payload.phone;
-      state.address = action.payload.address;
+    setUserData(state, action: PayloadAction<Partial<UserDataState>>) {
+      // Merge partial updates
+      Object.assign(state, action.payload);
     },
     resetUserData(state) {
       state.name = null;
       state.dob = null;
       state.phone = null;
+      state.email = null; // <-- reset this
       state.address = {
         po: null,
         district: null,
         state: null,
         pin: null,
       };
+      state.password = null;
     },
   },
 });
