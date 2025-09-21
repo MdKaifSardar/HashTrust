@@ -3,12 +3,10 @@ import React, { useEffect, useState } from "react";
 import { fetchAllUsersWithIdToken } from "@/lib/actions/user.actions";
 import Loader from "@/components/Loader";
 import { toast } from "react-toastify";
-import { useRouter } from "next/navigation";
 
 const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const router = useRouter();
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -53,8 +51,22 @@ const DashboardPage: React.FC = () => {
         <div className="text-xl text-red-600 font-semibold mb-4">
           Not authenticated
         </div>
-        <div className="text-gray-600">
-          Please sign up or log in to access your dashboard.
+        <div className="text-gray-600 mb-2">
+          Please{" "}
+          <a
+            href="/pages/auth/sign-up/user"
+            className="text-blue-600 underline font-semibold"
+          >
+            sign up
+          </a>{" "}
+          or{" "}
+          <a
+            href="/pages/auth/login/user"
+            className="text-blue-600 underline font-semibold"
+          >
+            log in
+          </a>{" "}
+          to access your dashboard.
         </div>
       </div>
     );

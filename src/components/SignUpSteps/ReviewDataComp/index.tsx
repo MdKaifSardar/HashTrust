@@ -95,24 +95,23 @@ const ReviewDataComp: React.FC = () => {
         userData.phone || "",
         JSON.stringify(userData.address || {}),
         userData.dob || "",
-        previewUrl, // always send previewUrl (base64 string) for id document
-        verificationStatus // <-- pass verification status object
+        previewUrl,
+        verificationStatus
       );
       setShowModal(false);
       if (result.idToken) {
         localStorage.setItem("authToken", result.idToken);
-      }
-      // Always show the message if present, else fallback to error or generic
-      if (result.message) {
-        if (result.error) {
-          toast.error(result.message);
-        } else {
-          toast.success(result.message);
-        }
+        window.dispatchEvent(new Event("authTokenChanged")); // <-- force Navbar to update
+        toast.success(result.message || "Sign up successful!");
+        setTimeout(() => {
+          router.push("/pages/user/dashboard");
+        }, 1200);
+      } else if (result.message) {
+        toast.error(result.message);
       } else if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success("User created successfully!");
+        toast.error("Sign up failed.");
       }
     } catch (e: any) {
       toast.error("Failed to submit data: " + (e?.message || "Unknown error"));

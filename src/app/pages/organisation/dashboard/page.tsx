@@ -1,6 +1,12 @@
 "use client";
-import OrgDashboardComp from "@/components/Organisation/OrgDashboardComp";
+import OrgDashboardComp from "@/components/OrgDashComp";
+import { ToastContainer } from "react-toastify";
 
 export default function OrgDashboardPage() {
-  return <OrgDashboardComp />;
+  return (
+    <div>
+      <ToastContainer />
+      <OrgDashboardComp />
+    </div>
+  );
 }

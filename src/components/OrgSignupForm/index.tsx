@@ -17,12 +17,9 @@ const OrgLoginForm = () => {
     setLoading(false);
     if (res.ok) {
       toast.success(res.message);
-      if (res.idToken) {
-        localStorage.setItem("authToken", res.idToken);
-        setTimeout(() => {
+      setTimeout(() => {
           router.push("/pages/organisation/dashboard");
         }, 1200);
-      }
     } else {
       toast.error(res.message);
     }

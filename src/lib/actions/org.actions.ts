@@ -18,6 +18,7 @@ import {
 import { firebaseApp } from "../database/firebase";
 
 let adminInitialized = false;
+
 function getOrInitAdminApp() {
   if (typeof window !== "undefined") return; // Never run admin SDK on client
   if (!adminInitialized && !admin.apps.length) {
@@ -38,12 +39,14 @@ export async function createOrganisation({
   email,
   password,
   contactPerson,
+  role = "organisation",
 }: {
   orgName: string;
   email: string;
   password: string;
   contactPerson: string;
-}): Promise<{ ok: boolean; message: string; idToken?: string }> {
+  role?: string;
+}): Promise<{ ok: boolean; message: string; sessionCookie?: string }> {
   try {
     if (!orgName || !email || !password || !contactPerson) {
       return { ok: false, message: "All fields are required." };
@@ -87,6 +90,7 @@ export async function createOrganisation({
       email,
       contactPerson,
       createdAt: new Date().toISOString(),
+      role, // <-- save role
     };
     try {
       await addDoc(collection(db, "organisations"), orgDoc);
@@ -96,10 +100,26 @@ export async function createOrganisation({
         message: "Failed to save organisation data. Please try again.",
       };
     }
+
+    // Create session cookie
+    const adminApp = getOrInitAdminApp();
+    if (!adminApp) {
+      return {
+        ok: false,
+        message: "Admin SDK not initialized. Server-side operation required.",
+      };
+    }
+    const adminAuth = adminApp.auth();
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await adminAuth.createSessionCookie(idToken!, {
+      expiresIn,
+    });
+
+    // Return session cookie (to be set in HTTP-only cookie by API route)
     return {
       ok: true,
       message: "Organisation account created successfully!",
-      idToken,
+      sessionCookie,
     };
   } catch (err: any) {
     return {
@@ -112,14 +132,17 @@ export async function createOrganisation({
 export async function loginOrganisation({
   email,
   password,
+  role = "organisation",
 }: {
   email: string;
   password: string;
-}): Promise<{ ok: boolean; message: string; idToken?: string }> {
+  role?: string;
+}): Promise<{ ok: boolean; message: string; sessionCookie?: string }> {
   try {
     if (!email || !password) {
       return { ok: false, message: "Email and password are required." };
     }
+    // Use firebaseApp for client-side auth
     const auth = getAuth(firebaseApp);
     let userCredential;
     try {
@@ -143,13 +166,32 @@ export async function loginOrganisation({
     const db = getFirestore(firebaseApp);
     const q = query(
       collection(db, "organisations"),
-      where("email", "==", email)
+      where("email", "==", email),
+      where("role", "==", role)
     );
     const orgSnap = await getDocs(q);
     if (orgSnap.empty) {
-      return { ok: false, message: "Organisation not found in database." };
+      return {
+        ok: false,
+        message: "Organisation with this role not found in database.",
+      };
     }
-    return { ok: true, message: "Organisation login successful!", idToken };
+
+    // Use admin SDK for session cookie creation
+    const adminApp = getOrInitAdminApp();
+    if (!adminApp) {
+      return {
+        ok: false,
+        message: "Admin SDK not initialized. Server-side operation required.",
+      };
+    }
+    const adminAuth = adminApp.auth();
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await adminAuth.createSessionCookie(idToken!, {
+      expiresIn,
+    });
+
+    return { ok: true, message: "Organisation login successful!", sessionCookie };
   } catch (err: any) {
     return {
       ok: false,
@@ -158,29 +200,50 @@ export async function loginOrganisation({
   }
 }
 
-export async function authenticateOrgWithIdToken(
-  idToken: string
+export async function authenticateOrgWithSessionCookie(
+  sessionCookie: string,
+  role = "organisation"
 ): Promise<{ ok: boolean; organisation?: any; message?: string }> {
   try {
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
     }
-    getOrInitAdminApp();
-    const adminAuth = admin.auth();
-    const adminDb = admin.firestore();
-    // Verify the ID token
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const adminApp = getOrInitAdminApp();
+    if (!adminApp) {
+      return { ok: false, message: "Admin SDK not initialized. Server-side operation required." };
+    }
+    const adminAuth = adminApp.auth();
+    const adminDb = adminApp.firestore();
+    // Verify the session cookie
+    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     const uid = decodedToken.uid;
     // Fetch organisation data from Firestore
     const orgDocSnap = await adminDb
       .collection("organisations")
       .where("uid", "==", uid)
+      .where("role", "==", role)
       .limit(1)
       .get();
     if (orgDocSnap.empty) {
-      return { ok: false, message: "Organisation not found in database." };
+      return { ok: false, message: "Organisation not found in database for this role." };
     }
-    const organisation = orgDocSnap.docs[0].data();
+    let organisation = orgDocSnap.docs[0].data();
+
+    // Convert Firestore Timestamp fields to ISO strings
+    if (organisation.createdAt && organisation.createdAt.toDate) {
+      organisation.createdAt = organisation.createdAt.toDate().toISOString();
+    }
+    // Convert apiKeys array timestamps
+    if (Array.isArray(organisation.apiKeys)) {
+      organisation.apiKeys = organisation.apiKeys.map((key: any) => ({
+        ...key,
+        createdAt:
+          key.createdAt && key.createdAt.toDate
+            ? key.createdAt.toDate().toISOString()
+            : key.createdAt,
+      }));
+    }
+
     return {
       ok: true,
       organisation,
@@ -188,51 +251,6 @@ export async function authenticateOrgWithIdToken(
     };
   } catch (err: any) {
     let errorMsg = err?.message || "Authentication failed.";
-    if (err?.code === "auth/argument-error") {
-      errorMsg = "Invalid or expired token.";
-    }
     return { ok: false, message: errorMsg };
-  }
-}
-
-
-export async function fetchOrgDetailsWithIdToken(
-  idToken: string
-): Promise<{ ok: boolean; organisation?: any; message?: string }> {
-  try {
-    if (typeof window !== "undefined") {
-      throw new Error("This function must be called from the server.");
-    }
-    getOrInitAdminApp();
-    const adminAuth = admin.auth();
-    const adminDb = admin.firestore();
-    // Verify the ID token and get the user's UID
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-    // Fetch only the organisation document for this UID
-    const orgDocSnap = await adminDb
-      .collection("organisations")
-      .where("uid", "==", uid)
-      .limit(1)
-      .get();
-    if (orgDocSnap.empty) {
-      return {
-        ok: false,
-        message: "Organisation not found in database.",
-        organisation: null,
-      };
-    }
-    const organisation = orgDocSnap.docs[0].data();
-    return {
-      ok: true,
-      organisation,
-      message: "Fetched organisation successfully.",
-    };
-  } catch (err: any) {
-    let errorMsg = err?.message || "Failed to fetch organisation.";
-    if (err?.code === "auth/argument-error") {
-      errorMsg = "Invalid or expired token.";
-    }
-    return { ok: false, message: errorMsg, organisation: null };
   }
 }

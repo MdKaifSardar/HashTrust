@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { createOrganisation } from "@/lib/actions/org.actions";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
 
 const OrgSignupComp = () => {
@@ -18,27 +17,30 @@ const OrgSignupComp = () => {
     setLoading(true);
     setError("");
     setSuccess("");
-    const res = await createOrganisation({
-      orgName,
-      email,
-      password,
-      contactPerson,
+    // Call API route that sets session cookie
+    const res = await fetch("/api/org-signup", {
+      method: "POST",
+      body: JSON.stringify({ orgName, email, password, contactPerson }),
+      headers: { "Content-Type": "application/json" },
     });
+    const data = await res.json();
     setLoading(false);
-    if (res.ok) {
-      setSuccess(res.message);
-      toast.success(res.message);
-      if (res.idToken) {
-        localStorage.setItem("authToken", res.idToken); // Save token for org auth
-      }
+    if (data.ok) {
+      setSuccess(data.message);
+      toast.success(data.message);
+      // Session cookie is set by backend, no need to store token in localStorage
+      setTimeout(() => {
+        window.location.href = "/pages/organisation/dashboard";
+      }, 1200);
     } else {
-      setError(res.message);
-      toast.error(res.message);
+      setError(data.message);
+      toast.error(data.message);
     }
   };
 
   return (
     <>
+      <ToastContainer />
       <div className="absolute top-4 left-4">
         <Link
           href="/"
@@ -90,7 +92,10 @@ const OrgSignupComp = () => {
             />
           </div>
           <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="text-blue-700 font-semibold text-sm" htmlFor="email">
+            <label
+              className="text-blue-700 font-semibold text-sm"
+              htmlFor="email"
+            >
               Organisation Email
             </label>
             <input
@@ -132,7 +137,9 @@ const OrgSignupComp = () => {
           <div className="text-red-600 text-center text-sm mt-2">{error}</div>
         )}
         {success && (
-          <div className="text-green-600 text-center text-sm mt-2">{success}</div>
+          <div className="text-green-600 text-center text-sm mt-2">
+            {success}
+          </div>
         )}
       </form>
     </>

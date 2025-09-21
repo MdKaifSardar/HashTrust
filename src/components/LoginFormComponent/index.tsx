@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { loginUser } from "@/lib/actions/user.actions";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -21,6 +21,7 @@ const LoginFormComponent: React.FC = () => {
       const res = await loginUser(form.email, form.password);
       if (res.ok && res.idToken) {
         localStorage.setItem("authToken", res.idToken);
+        window.dispatchEvent(new Event("authTokenChanged")); // <-- force Navbar to update
         toast.success(res.message || "Login successful!");
         setTimeout(() => {
           router.push("/pages/user/dashboard");
@@ -53,7 +54,9 @@ const LoginFormComponent: React.FC = () => {
           Sign In
         </h2>
         <div className="mb-5">
-          <label className="block font-semibold mb-1 text-gray-700">Email</label>
+          <label className="block font-semibold mb-1 text-gray-700">
+            Email
+          </label>
           <input
             type="email"
             name="email"
@@ -65,7 +68,9 @@ const LoginFormComponent: React.FC = () => {
           />
         </div>
         <div className="mb-8">
-          <label className="block font-semibold mb-1 text-gray-700">Password</label>
+          <label className="block font-semibold mb-1 text-gray-700">
+            Password
+          </label>
           <input
             type="password"
             name="password"

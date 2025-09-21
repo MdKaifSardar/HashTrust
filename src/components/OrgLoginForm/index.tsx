@@ -16,14 +16,19 @@ const OrgLoginForm = () => {
     setLoading(true);
     const res = await loginOrganisation({ email, password });
     setLoading(false);
-    if (res.ok) {
+    if (res.ok && res.sessionCookie) {
+      // Save session cookie to browser
+      document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Strict; Secure`;
       toast.success(res.message);
-      if (res.idToken) {
-        localStorage.setItem("authToken", res.idToken);
-        setTimeout(() => {
+      setTimeout(() => {
           router.push("/pages/organisation/dashboard");
         }, 1200);
-      }
+    } else if (res.ok) {
+      // If sessionCookie is not returned, just proceed
+      toast.success(res.message);
+      setTimeout(() => {
+          router.push("/pages/organisation/dashboard");
+        }, 1200);
     } else {
       toast.error(res.message);
     }

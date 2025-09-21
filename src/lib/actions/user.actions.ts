@@ -90,7 +90,8 @@ export async function createUser(
     faceLiveness?: { status: string; score: number | null };
     faceSimilarity?: { status: string; score: number | null };
     // add more if needed
-  }
+  },
+  role = "user" // default role
 ): Promise<CreateUserResult & { message?: string; hash?: string; blockchainTxHash?: string }> {
   try {
     // ✅ Convert base64 to File
@@ -272,6 +273,7 @@ export async function createUser(
       verificationStatus: verificationStatus || null, // <-- save verification status object
       createdAt: new Date().toISOString(),
       hash: userDataHash, // <-- save the hash in the user document
+      role, // <-- save role
     };
 
     try {
@@ -350,7 +352,7 @@ function getOrInitAdminApp() {
   return admin;
 }
 
-export async function authenticateUserWithIdToken(idToken: string) {
+export async function authenticateUserWithIdToken(idToken: string, role = "user") {
   try {
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
@@ -373,11 +375,12 @@ export async function authenticateUserWithIdToken(idToken: string) {
     const userDocSnap = await adminDb
       .collection("users")
       .where("uid", "==", uid)
+      .where("role", "==", role) // <-- check role
       .limit(1)
       .get();
 
     if (userDocSnap.empty) {
-      return { ok: false, error: "User not found in database." };
+      return { ok: false, error: "User not found in database for this role." };
     }
 
     const userData = userDocSnap.docs[0].data();
@@ -397,7 +400,7 @@ export async function authenticateUserWithIdToken(idToken: string) {
 }
 
 // Fetch all users from Firestore, requires admin privileges and a valid idToken
-export async function fetchAllUsersWithIdToken(idToken: string) {
+export async function fetchAllUsersWithIdToken(idToken: string, role = "user") {
   try {
     // Only run admin SDK code on server
     if (typeof window !== "undefined") {
@@ -411,17 +414,18 @@ export async function fetchAllUsersWithIdToken(idToken: string) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    // Fetch only the user document for this UID
+    // Fetch only the user document for this UID and role
     const userDocSnap = await adminDb
       .collection("users")
       .where("uid", "==", uid)
+      .where("role", "==", role) // <-- check role
       .limit(1)
       .get();
 
     if (userDocSnap.empty) {
       return {
         ok: false,
-        error: "User not found in database.",
+        error: "User not found in database for this role.",
         user: null,
       };
     }
@@ -452,17 +456,22 @@ export async function fetchAllUsersWithIdToken(idToken: string) {
 
 export async function loginUser(
   email: string,
-  password: string
+  password: string,
+  role = "user" // default role
 ): Promise<{ ok: boolean; idToken?: string; error?: string; message?: string }> {
   try {
-    // 1. Find user in Firestore by email
+    // 1. Find user in Firestore by email and role
     const adminDb = getAdminFirestore();
-    const userSnap = await adminDb.collection("users").where("emailAddress", "==", email).limit(1).get();
+    const userSnap = await adminDb.collection("users")
+      .where("emailAddress", "==", email)
+      .where("role", "==", role)
+      .limit(1)
+      .get();
     if (userSnap.empty) {
       return {
         ok: false,
-        error: "No user found with this email.",
-        message: "No user found with this email.",
+        error: "No user found with this email and role.",
+        message: "No user found with this email and role.",
       };
     }
     const userData = userSnap.docs[0].data();
@@ -493,20 +502,11 @@ export async function loginUser(
     try {
       userCredential = await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
-      let errorMsg = "Login failed.";
-      if (err?.code === "auth/user-not-found" || err?.code === "auth/wrong-password") {
-        errorMsg = "Invalid email or password.";
-      } else if (err?.code === "auth/invalid-email") {
-        errorMsg = "Please enter a valid email address.";
-      } else if (err?.code === "auth/too-many-requests") {
-        errorMsg = "Too many failed attempts. Please try again later.";
-      } else if (typeof err?.message === "string" && err.message.toLowerCase().includes("default firebase app does not exist")) {
-        errorMsg = "Server error. Please try again later.";
-      }
+      // Always return a generic message for incorrect credentials
       return {
         ok: false,
-        error: errorMsg,
-        message: errorMsg,
+        error: "Incorrect credentials.",
+        message: "Incorrect credentials.",
       };
     }
     const firebaseUser = userCredential.user;
@@ -517,11 +517,10 @@ export async function loginUser(
       message: "Login successful! Redirecting to your dashboard...",
     };
   } catch (err: any) {
-    let errorMsg = "Server error. Please try again later.";
     return {
       ok: false,
-      error: errorMsg,
-      message: errorMsg,
+      error: "Server error. Please try again later.",
+      message: "Server error. Please try again later.",
     };
   }
 }

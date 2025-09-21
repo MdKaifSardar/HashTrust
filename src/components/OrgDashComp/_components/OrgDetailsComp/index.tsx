@@ -14,7 +14,7 @@ interface OrgDetailsProps {
 
 const OrgDetailsComp: React.FC<OrgDetailsProps> = ({ organisation }) => {
   return (
-    <div className="bg-white p-8 rounded-lg border border-blue-100 shadow-sm max-w-xl mx-auto">
+    <div className="bg-white p-8 rounded-lg border border-blue-100 shadow-sm w-full h-full">
       <h2 className="text-2xl font-bold text-blue-700 mb-4">Organisation Details</h2>
       <div className="space-y-3">
         <div>
