@@ -21,6 +21,7 @@ import { useLivenessDetector } from "../../../utils/hooks/LivenessDetector";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { resetFaceSimilarityCheck } from "@/redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const TakeUserImagesComp: React.FC = () => {
   const dispatch = useDispatch();
@@ -173,9 +174,43 @@ const TakeUserImagesComp: React.FC = () => {
   const disableAll = capturing || livenessLoading;
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow flex flex-col items-center">
+    <div className="bg-transparent flex flex-col justify-center items-center h-full rounded-lg relative w-full min-h-screen">
+      {/* Top navigation buttons at top corners */}
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
+        <button
+          type="button"
+          onClick={handlePrev}
+          disabled={disableAll}
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
+          ${
+            disableAll
+              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
+              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+          }
+        `}
+        >
+          <FiChevronLeft size={28} />
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={disableAll || !image || !faceLiveness}
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
+          ${
+            disableAll || !image || !faceLiveness
+              ? "bg-green-300 text-white cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700"
+          }
+        `}
+        >
+          <FiChevronRight size={28} />
+        </button>
+      </div>
+
       <ToastContainer position="top-right" />
-      <h2 className="text-2xl font-bold mb-4 text-blue-700">Take Your Photo</h2>
+      <h2 className="text-2xl font-bold mb-4 text-blue-700 mt-12">
+        Take Your Photo
+      </h2>
 
       <div className="mb-4">
         <video
@@ -228,19 +263,6 @@ const TakeUserImagesComp: React.FC = () => {
       <div className="flex gap-4 mt-4">
         <button
           type="button"
-          onClick={handlePrev}
-          disabled={disableAll}
-          className={`px-6 py-2 rounded shadow font-semibold ${
-            disableAll
-              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Prev
-        </button>
-
-        <button
-          type="button"
           onClick={image ? handleRetake : handleTakePhoto}
           disabled={disableAll}
           className={`px-6 py-2 rounded shadow font-semibold ${
@@ -250,19 +272,6 @@ const TakeUserImagesComp: React.FC = () => {
           }`}
         >
           {image ? "Retake" : "Take Image"}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={disableAll || !image || !faceLiveness}
-          className={`px-6 py-2 rounded shadow font-semibold ${
-            disableAll || !image || !faceLiveness
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
-          }`}
-        >
-          Next
         </button>
       </div>
 
@@ -274,6 +283,10 @@ const TakeUserImagesComp: React.FC = () => {
           : !image
           ? "Position your face clearly in the frame and click 'Take Image'."
           : "Image captured. You can retake or proceed if face is LIVE."}
+      </div>
+
+      <div className="mt-14 w-full flex flex-col items-center">
+        {/* Additional content or instructions can go here */}
       </div>
     </div>
   );

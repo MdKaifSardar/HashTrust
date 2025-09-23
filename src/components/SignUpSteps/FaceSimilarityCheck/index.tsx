@@ -24,6 +24,7 @@ import {
 import { compareFacesAction } from "../../../lib/actions/faceSimilarity.actions";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 // Helper to convert base64 data URL or blob/http URL to File
 async function urlOrBase64ToFile(src: string, filename: string): Promise<File> {
@@ -103,17 +104,21 @@ const FaceSimilarityCheck: React.FC = () => {
 
       dispatch(setApiResult(apiRes));
 
+      // Use 75 as threshold for match
+      const confidence = apiRes.confidence ?? 0;
+      const isMatch = confidence >= 75;
+
       if (apiRes.ok) {
         dispatch(
           setSimilarityResult({
-            score: apiRes.confidence,
-            isMatch: apiRes.isMatch ?? false,
+            score: confidence,
+            isMatch: isMatch,
           })
         );
         dispatch(setHasChecked(true));
         toast.success(
-          `Done! Confidence: ${apiRes.confidence} — ${
-            apiRes.confidence > 80 ? "Likely same person" : "Different person"
+          `Done! Confidence: ${confidence} — ${
+            isMatch ? "Matched" : "Not Matched"
           }`
         );
       } else {
@@ -136,103 +141,98 @@ const FaceSimilarityCheck: React.FC = () => {
   const disableAll = loading;
 
   return (
-    <div className="mx-auto p-6 bg-white rounded-lg flex flex-col items-center">
-      <ToastContainer position="top-right" />
-      <h2 className="text-2xl font-bold mb-4 text-blue-700">
-        Face Similarity Check
-      </h2>
-      <div className="flex gap-8 mb-6 items-center">
-        <div className="flex flex-col items-center">
-          <span className="text-sm text-gray-600 mb-2">Extracted Face</span>
-          {extractedFacePreview ? (
-            <img
-              src={extractedFacePreview}
-              alt="Extracted Face"
-              className="w-32 h-32 object-cover rounded border"
-            />
-          ) : (
-            <div className="w-32 h-32 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
-              No Image
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="text-sm text-gray-600 mb-2">Taken Image</span>
-          {userImagePreview ? (
-            <img
-              src={userImagePreview}
-              alt="User Face"
-              className="w-32 h-32 object-cover rounded border"
-            />
-          ) : (
-            <div className="w-32 h-32 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
-              No Image
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex gap-4 mb-4">
+    <div className="bg-transparent flex flex-col justify-center items-center h-full rounded-lg relative w-full min-h-screen">
+      {/* Top navigation buttons at top corners */}
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
         <button
           type="button"
           onClick={handlePrev}
           disabled={disableAll}
-          className={`px-6 py-2 rounded shadow font-semibold ${
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
+          ${
             disableAll
               ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
+              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+          }
+        `}
         >
-          Prev
+          <FiChevronLeft size={28} />
         </button>
-
-        <button
-          type="button"
-          onClick={handleCheckSimilarity}
-          disabled={disableAll || !extractedFacePreview || !userImagePreview}
-          className={`px-6 py-2 rounded shadow font-semibold ${
-            disableAll || !extractedFacePreview || !userImagePreview
-              ? "bg-blue-300 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          {hasChecked ? "Recheck" : "Check Similarity"}
-        </button>
-
         <button
           type="button"
           onClick={handleNext}
           disabled={disableAll || !isMatch}
-          className={`px-6 py-2 rounded shadow font-semibold ${
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
+          ${
             disableAll || !isMatch
               ? "bg-green-300 text-white cursor-not-allowed"
               : "bg-green-600 text-white hover:bg-green-700"
-          }`}
+          }
+        `}
         >
-          Next
+          <FiChevronRight size={28} />
         </button>
       </div>
 
-      <div className="mt-[.5rem] text-gray-700 text-sm">
-        {loading ? (
-          "Checking similarity..."
-        ) : apiResult || similarityScore !== null ? (
-          <div>
-            <span>
-              Confidence Score:{" "}
-              <span className="font-mono">
-                {apiResult?.confidence ?? similarityScore}
-              </span>
-            </span>
-            <br />
-            <span className="font-semibold">
-              {apiResult?.message}
-            </span>
+      <div className="w-full flex flex-col items-center">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700">
+          Face Similarity Check
+        </h2>
+        <div className="flex gap-8 mb-6 items-center">
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-gray-600 mb-2">Extracted Face</span>
+            {extractedFacePreview ? (
+              <img
+                src={extractedFacePreview}
+                alt="Extracted Face"
+                className="w-32 h-32 object-cover rounded border"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+                No Image
+              </div>
+            )}
           </div>
-        ) : null}
-      </div>
+          <div className="flex flex-col items-center">
+            <span className="text-sm text-gray-600 mb-2">Taken Image</span>
+            {userImagePreview ? (
+              <img
+                src={userImagePreview}
+                alt="User Face"
+                className="w-32 h-32 object-cover rounded border"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+                No Image
+              </div>
+            )}
+          </div>
+        </div>
 
-      {error && <div className="text-red-500 mt-2">{error}</div>}
+        <div className="mt-[.5rem] text-gray-700 text-sm w-full flex flex-col items-center">
+          {loading ? (
+            "Checking similarity..."
+          ) : similarityScore !== null ? (
+            <div className="flex flex-col items-center gap-2">
+              <span>
+                Confidence Score:{" "}
+                <span className="font-mono text-blue-700 font-bold">
+                  {similarityScore}
+                </span>
+              </span>
+              <span
+                className={`font-semibold text-lg ${
+                  isMatch ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {isMatch ? "Matched" : "Not Matched"}
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {error && <div className="text-red-500 mt-2">{error}</div>}
+      </div>
     </div>
   );
 };

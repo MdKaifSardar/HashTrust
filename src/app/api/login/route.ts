@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     }
     const apiKeyRes = await verifyApiKey(apiKey);
 
-    // If API key is invalid, just return error, do not record usage
     if (!apiKeyRes.ok) {
       return NextResponse.json({ ok: false, error: apiKeyRes.message || "Invalid API Key." }, { status: 401 });
     }
@@ -32,26 +31,29 @@ export async function POST(req: NextRequest) {
       type,
       reqBody,
       result,
-      !!(result.ok && result.idToken),
-      result.ok && result.idToken ? 200 : 401
+      !!(result.ok && result.sessionCookie),
+      result.ok && result.sessionCookie ? 200 : 401
     );
 
-    if (result.ok && result.idToken) {
-      return NextResponse.json({
+    if (result.ok && result.sessionCookie) {
+      // Set session cookie in response
+      const response = NextResponse.json({
         ok: true,
-        idToken: result.idToken,
         message: result.message || "Login successful",
       });
+      response.headers.set(
+        "Set-Cookie",
+        `session=${result.sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${60 * 60 * 24 * 5}`
+      );
+      return response;
     } else {
-      // Return the message from userlogin function
       return NextResponse.json({
         ok: false,
-        error: result.error || result.message || "Login failed.",
-        message: result.message || result.error || "Login failed.",
+        error: result.message || "Login failed.",
+        message: result.message || "Login failed.",
       }, { status: 401 });
     }
   } catch (err: any) {
-    // Always record failed usage for any error, including parsing errors
     try {
       await recordApiKeyUsage(
         apiKey,

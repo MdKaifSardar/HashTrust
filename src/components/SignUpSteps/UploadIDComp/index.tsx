@@ -23,6 +23,7 @@ import {
 import { toast } from "react-toastify";
 import { useExtractFaceFromDoc } from "../../../utils/hooks/ExtractFaceFromDoc";
 import Loader from "../../Loader";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const UploadIDComp: React.FC = () => {
   const dispatch = useDispatch();
@@ -114,7 +115,36 @@ const UploadIDComp: React.FC = () => {
     dispatch(setCurrentStep(currentStep + 1));
   };
   return (
-    <div className="flex flex-col items-center">
+    <div className="bg-transparent flex flex-col justify-center items-center w-full min-h-screen relative">
+      {/* Top navigation buttons at top corners */}
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
+        <button
+          type="button"
+          onClick={() => dispatch(setCurrentStep(currentStep - 1))}
+          disabled={currentStep === 0}
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
+          ${
+            currentStep === 0
+              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
+              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+          }`}
+        >
+          <FiChevronLeft size={28} />
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!faceImage}
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
+          ${
+            !faceImage
+              ? "bg-green-300 text-white cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700"
+          }`}
+        >
+          <FiChevronRight size={28} />
+        </button>
+      </div>
       <label className="block font-medium mb-2 text-gray-700">
         Upload Identity Document (Aadhaar card, JPEG/JPG)
       </label>
@@ -197,18 +227,10 @@ const UploadIDComp: React.FC = () => {
             Re-extract
           </button>
         )}
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!faceImage}
-          className={`px-6 py-2 rounded shadow transition font-semibold ${
-            !faceImage
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
-          }`}
-        >
-          Next
-        </button>
+      </div>
+      {/* Add top margin to main content to avoid overlap with buttons */}
+      <div className="mt-14 w-full flex flex-col items-center">
+        {/* ...existing content... */}
       </div>
     </div>
   );

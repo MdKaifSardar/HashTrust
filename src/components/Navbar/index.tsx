@@ -5,17 +5,10 @@ import { NAV_LINKS } from "@/utils/data/Navbar";
 import { motion, AnimatePresence } from "framer-motion";
 import SideMenu from "@/components/Navbar/_components/SideMenu";
 import { useRouter } from "next/navigation";
-import { ToastContainer } from "react-toastify";
 
 // Helper to check for session cookie
 function hasSessionCookie() {
   return document.cookie.split("; ").some((row) => row.startsWith("session="));
-}
-
-// Helper to remove session cookie
-function removeSessionCookie() {
-  document.cookie = "session=; path=/; max-age=0; SameSite=Strict; Secure";
-  window.dispatchEvent(new Event("sessionChanged"));
 }
 
 const Navbar = ({ onLogoutClick }: { onLogoutClick?: () => void }) => {

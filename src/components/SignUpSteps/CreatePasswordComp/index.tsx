@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentStep, selectCurrentStep } from "../../../redux/features/signUpSteps/stepSlice";
 import { setUserData, selectUserData } from "../../../redux/features/userData/userDataSlice";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 interface EmailPasswordState {
   email: string;
@@ -52,84 +53,88 @@ const CreatePasswordComp: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-lg flex flex-col gap-6 items-center">
-      <h2 className="text-2xl font-bold mb-2 text-blue-700 text-center">Email &amp; Password</h2>
-      <div className="w-full flex flex-col gap-4">
-        <div>
-          <label className="block font-semibold mb-1 text-gray-700">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            autoComplete="email"
-          />
-        </div>
-        <div>
-          <label className="block font-semibold mb-1 text-gray-700">Password</label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              className="absolute right-2 top-2 text-gray-500"
-              onClick={() => setShowPassword((v) => !v)}
-              tabIndex={-1}
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
-        </div>
-        <div>
-          <label className="block font-semibold mb-1 text-gray-700">Confirm Password</label>
-          <div className="relative">
-            <input
-              type={showConfirm ? "text" : "password"}
-              name="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              className="absolute right-2 top-2 text-gray-500"
-              onClick={() => setShowConfirm((v) => !v)}
-              tabIndex={-1}
-            >
-              {showConfirm ? "Hide" : "Show"}
-            </button>
-          </div>
-        </div>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-      </div>
-      <div className="flex gap-4 justify-center mt-2">
+    <div className="bg-transparent flex flex-col justify-center items-center w-full min-h-screen h-full rounded-lg relative">
+      {/* Top navigation buttons at top corners */}
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
         <button
           type="button"
           onClick={handlePrev}
-          className="px-6 py-2 rounded font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300"
+          className="flex items-center justify-center w-12 h-12 rounded-full font-semibold bg-gray-200 text-blue-700 hover:bg-gray-300"
         >
-          Prev
+          <FiChevronLeft size={28} />
         </button>
         <button
           type="button"
           onClick={handleNext}
           disabled={!form.email || !form.password || !form.confirmPassword}
-          className={`px-6 py-2 rounded font-semibold ${
+          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold ${
             !form.email || !form.password || !form.confirmPassword
               ? "bg-green-300 text-white cursor-not-allowed"
               : "bg-green-600 text-white hover:bg-green-700"
           }`}
         >
-          Next
+          <FiChevronRight size={28} />
         </button>
+      </div>
+
+      <div className="h-fit flex flex-col items-center">
+        <h2 className="text-3xl font-bold mb-2 text-blue-700 text-center">Email &amp; Password</h2>
+        <div className="w-full flex flex-col gap-6">
+          <div>
+            <label className="block font-semibold mb-1 text-blue-700">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              className="w-full border border-blue-200 rounded-lg px-5 py-3 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-blue-50 text-base"
+              autoComplete="email"
+            />
+          </div>
+          <div>
+            <label className="block font-semibold mb-1 text-blue-700">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full border border-blue-200 rounded-lg px-5 py-3 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-blue-50 text-base"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 font-semibold text-sm"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block font-semibold mb-1 text-blue-700">Confirm Password</label>
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                className="w-full border border-blue-200 rounded-lg px-5 py-3 focus:ring-2 focus:ring-blue-300 focus:outline-none bg-blue-50 text-base"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 font-semibold text-sm"
+                onClick={() => setShowConfirm((v) => !v)}
+                tabIndex={-1}
+              >
+                {showConfirm ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+        </div>
       </div>
     </div>
   );

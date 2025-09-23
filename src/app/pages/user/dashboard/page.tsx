@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { fetchAllUsersWithIdToken } from "@/lib/actions/user.actions";
+import { authenticateUserWithSessionCookie } from "@/lib/actions/user.actions";
 import Loader from "@/components/Loader";
 import { toast } from "react-toastify";
 
@@ -12,19 +12,23 @@ const DashboardPage: React.FC = () => {
     const verifyUser = async () => {
       setLoading(true);
       try {
-        const idToken = localStorage.getItem("authToken");
-        if (!idToken) {
+        // Get session cookie from browser
+        const sessionCookie = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("session="))
+          ?.split("=")[1];
+        if (!sessionCookie) {
           toast.error("You are not signed in. Please sign up or log in.");
           setLoading(false);
           setUser(null);
           return;
         }
-        // Fetch the user using the idToken
-        const userRes = await fetchAllUsersWithIdToken(idToken);
+        // Fetch the user using the session cookie
+        const userRes = await authenticateUserWithSessionCookie(sessionCookie);
         if (userRes.ok && userRes.user) {
           setUser(userRes.user);
         } else {
-          toast.error(userRes.error || "Failed to fetch user.");
+          toast.error(userRes.message || "Failed to fetch user.");
           setUser(null);
         }
       } catch (e: any) {

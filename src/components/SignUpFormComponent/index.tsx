@@ -10,69 +10,37 @@ import ReviewDataComp from "../SignUpSteps/ReviewDataComp";
 import { useSelector } from "react-redux";
 import { selectCurrentStep } from "../../redux/features/signUpSteps/stepSlice";
 import { ToastContainer } from "react-toastify";
-import Link from "next/link";
+import SideProgressMenu from "./_components/SideProgressMenu";
+import MobileTopProgressBar from "./_components/MobileTopProgressBar";
 
 const steps = [
   { label: "ID Document" },
   { label: "Extract Data" },
   { label: "User Images" },
   { label: "Face Similarity" },
-  { label: "Email and Password" }, // <-- add password step
+  { label: "Email and Password" },
   { label: "Review Data" },
-  // Add more steps here as you implement them
 ];
 
 const SignUpFormComponent: React.FC = () => {
   const currentStep = useSelector(selectCurrentStep);
 
   return (
-    <div className="w-[70%] mx-auto">
-      <div className="absolute top-4 left-4">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-blue-700 hover:text-cyan-500 font-semibold text-base"
-        >
-          <span className="text-xl">&#8592;</span> Back to Home
-        </Link>
-      </div>
-      {/* Progress Bar */}
-      <div className="flex items-center mb-8">
-        {steps.map((step, idx) => (
-          <React.Fragment key={step.label}>
-            <div className="flex flex-col items-center flex-1">
-              <div
-                className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${
-                  idx <= currentStep
-                    ? "bg-blue-500 border-blue-500 text-white"
-                    : "bg-gray-200 border-gray-300 text-gray-500"
-                }`}
-              >
-                {idx + 1}
-              </div>
-              <span
-                className={`mt-2 text-xs font-medium ${
-                  idx <= currentStep ? "text-blue-600" : "text-gray-400"
-                }`}
-              >
-                {step.label}
-              </span>
-            </div>
-            {idx < steps.length - 1 && (
-              <div className="flex-1 h-1 bg-gray-300 mx-2" />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-      {/* Step Content */}
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <ToastContainer />
-        {currentStep === 0 && <UploadIDComp />}
-        {currentStep === 1 && <DataExtractDocComp />}
-        {currentStep === 2 && <TakeUserImagesComp />}
-        {currentStep === 3 && <FaceSimilarityCheck />}
-        {currentStep === 4 && <CreatePasswordComp />} {/* <-- password step */}
-        {currentStep === 5 && <ReviewDataComp />} {/* <-- review step */}
-        {/* Add more steps here as you implement them */}
+    <div className="w-full h-full flex flex-col sm:flex-row bg-gray-100">
+      {/* SideProgressMenu: fixed position, 20% width on desktop */}
+      <ToastContainer />
+      <SideProgressMenu />
+      <MobileTopProgressBar />
+      {/* Step Content: 80% width on desktop, full width on mobile */}
+      <div className=" p-[.5rem] md:p-[1rem] flex-1 flex flex-col items-center justify-start h-full ml-0 sm:ml-[30%] lg:ml-[20%] w-full sm:w-[calc(100vw-30%)] lg:w-[calc(100vw-20%)]">
+        <div className=" w-full h-full flex flex-col justify-center items-center rounded-2xl shadow-lg flex-1">
+          {currentStep === 0 && <UploadIDComp />}
+          {currentStep === 1 && <DataExtractDocComp />}
+          {currentStep === 2 && <TakeUserImagesComp />}
+          {currentStep === 3 && <FaceSimilarityCheck />}
+          {currentStep === 4 && <CreatePasswordComp />}
+          {currentStep === 5 && <ReviewDataComp />}
+        </div>
       </div>
     </div>
   );
