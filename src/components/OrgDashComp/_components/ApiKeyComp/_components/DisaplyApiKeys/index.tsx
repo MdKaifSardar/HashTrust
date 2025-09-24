@@ -106,14 +106,18 @@ const DisplayApiKeys = ({
     }
     setLoading(true);
     try {
-      const idToken = localStorage.getItem("authToken");
-      if (!idToken) {
+      // Get session cookie from browser
+      const sessionCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("session="))
+        ?.split("=")[1];
+      if (!sessionCookie) {
         toast.error("Not authenticated.");
         setLoading(false);
         setDeleteModalOpen(false);
         return;
       }
-      const res = await deleteApiKeyById(deleteKeyId, idToken);
+      const res = await deleteApiKeyById(deleteKeyId, sessionCookie);
       if (res.ok) {
         toast.success(res.message || "API Key deleted!");
         await fetchApiKeys(); // Reload API keys after deletion

@@ -6,7 +6,8 @@ import { getOrInitAdminApp } from "@/lib/database/AdminApp";
 import { FieldValue } from "firebase-admin/firestore";
 
 function generateApiKey(length = 32) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let key = "";
   for (let i = 0; i < length; ++i) {
     key += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -15,10 +16,10 @@ function generateApiKey(length = 32) {
 }
 
 export async function createApiKeyForOrg({
-  idToken,
+  sessionCookie,
   organisationUid,
 }: {
-  idToken: string;
+  sessionCookie: string;
   organisationUid?: string;
 }): Promise<{ ok: boolean; apiKey?: string; message?: string }> {
   try {
@@ -29,8 +30,8 @@ export async function createApiKeyForOrg({
     const adminAuth = getAuth();
     const adminDb = getFirestore();
 
-    // Verify the ID token and get the user's UID
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    // Verify the session cookie and get the user's UID
+    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     const uid = organisationUid || decodedToken.uid;
 
     // Find organisation document by UID
@@ -50,7 +51,11 @@ export async function createApiKeyForOrg({
     // Check if org already has an API key
     const apiKeysArr = Array.isArray(orgData.apiKeys) ? orgData.apiKeys : [];
     if (apiKeysArr.length > 0) {
-      return { ok: false, message: "Organisation already has an API Key. Only one API Key is allowed." };
+      return {
+        ok: false,
+        message:
+          "Organisation already has an API Key. Only one API Key is allowed.",
+      };
     }
 
     // Generate API key
@@ -71,7 +76,11 @@ export async function createApiKeyForOrg({
 
     await orgDocRef.update({ apiKeys: apiKeysArr });
 
-    return { ok: true, apiKey, message: "API Key created and saved successfully." };
+    return {
+      ok: true,
+      apiKey,
+      message: "API Key created and saved successfully.",
+    };
   } catch (err: any) {
     return {
       ok: false,
@@ -80,10 +89,16 @@ export async function createApiKeyForOrg({
   }
 }
 
-export async function deleteApiKeyById(apiKeyId: string, idToken: string): Promise<{ ok: boolean; message?: string }> {
+export async function deleteApiKeyById(
+  apiKeyId: string,
+  sessionCookie: string
+): Promise<{ ok: boolean; message?: string }> {
   try {
     if (typeof window !== "undefined") {
-      return { ok: false, message: "This function must be called from the server." };
+      return {
+        ok: false,
+        message: "This function must be called from the server.",
+      };
     }
     getOrInitAdminApp();
     const adminDb = getFirestore();
@@ -112,7 +127,7 @@ export async function deleteApiKeyById(apiKeyId: string, idToken: string): Promi
     // Find the organisation document by UID (from token or apiKey doc)
     let decodedToken;
     try {
-      decodedToken = await adminAuth.verifyIdToken(idToken);
+      decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     } catch (err: any) {
       return { ok: false, message: "Invalid or expired authentication token." };
     }
@@ -137,13 +152,19 @@ export async function deleteApiKeyById(apiKeyId: string, idToken: string): Promi
     const afterCount = apiKeysArr.length;
 
     if (beforeCount === afterCount) {
-      return { ok: false, message: "API Key not found in organisation's API keys array." };
+      return {
+        ok: false,
+        message: "API Key not found in organisation's API keys array.",
+      };
     }
 
     try {
       await orgDocRef.update({ apiKeys: apiKeysArr });
     } catch (err: any) {
-      return { ok: false, message: "Failed to update organisation API keys array." };
+      return {
+        ok: false,
+        message: "Failed to update organisation API keys array.",
+      };
     }
 
     return { ok: true, message: "API Key deleted successfully." };
@@ -161,7 +182,11 @@ export async function getApiKeysForOrg({
 }: {
   sessionCookie: string;
   organisationUid?: string;
-}): Promise<{ ok: boolean; apiKeys?: Array<{ id: string; apiKey: string; createdAt: string }>; message?: string }> {
+}): Promise<{
+  ok: boolean;
+  apiKeys?: Array<{ id: string; apiKey: string; createdAt: string }>;
+  message?: string;
+}> {
   try {
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
@@ -171,7 +196,10 @@ export async function getApiKeysForOrg({
     const adminDb = getFirestore();
 
     // Verify session cookie and get UID
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedToken = await adminAuth.verifySessionCookie(
+      sessionCookie,
+      true
+    );
     const uid = organisationUid || decodedToken.uid;
 
     // Fetch API keys for this organisation from the apikeys collection
@@ -180,7 +208,7 @@ export async function getApiKeysForOrg({
       .where("organisationUid", "==", uid)
       .get();
 
-    const apiKeysArr = snap.docs.map(doc => {
+    const apiKeysArr = snap.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -203,7 +231,9 @@ export async function getApiKeysForOrg({
   }
 }
 
-export async function verifyApiKey(apiKey: string): Promise<{ ok: boolean; organisationUid?: string; message?: string }> {
+export async function verifyApiKey(
+  apiKey: string
+): Promise<{ ok: boolean; organisationUid?: string; message?: string }> {
   try {
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
@@ -223,7 +253,11 @@ export async function verifyApiKey(apiKey: string): Promise<{ ok: boolean; organ
     }
 
     const doc = snap.docs[0].data();
-    return { ok: true, organisationUid: doc.organisationUid, message: "API Key is valid." };
+    return {
+      ok: true,
+      organisationUid: doc.organisationUid,
+      message: "API Key is valid.",
+    };
   } catch (err: any) {
     return {
       ok: false,
@@ -267,12 +301,18 @@ export async function recordApiKeyUsage(
           type: type,
           request: request ? JSON.stringify(request) : "",
           response: response ? JSON.stringify(response) : "",
-          success: typeof success === "boolean" ? success : !!(response && response.ok),
-          status: typeof status === "number"
-            ? status
-            : (response && typeof response.status === "number"
-                ? response.status
-                : (response && response.ok ? 200 : 400)),
+          success:
+            typeof success === "boolean"
+              ? success
+              : !!(response && response.ok),
+          status:
+            typeof status === "number"
+              ? status
+              : response && typeof response.status === "number"
+              ? response.status
+              : response && response.ok
+              ? 200
+              : 400,
         }),
       },
       { merge: true }
@@ -284,7 +324,11 @@ export async function recordApiKeyUsage(
   }
 }
 
-export async function getApiKeyUsageData(apiKey: string): Promise<{ ok: boolean; usageLog?: Array<{ time: string; type: string }>; message?: string }> {
+export async function getApiKeyUsageData(apiKey: string): Promise<{
+  ok: boolean;
+  usageLog?: Array<{ time: string; type: string }>;
+  message?: string;
+}> {
   try {
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
@@ -309,6 +353,9 @@ export async function getApiKeyUsageData(apiKey: string): Promise<{ ok: boolean;
       usageLog: Array.isArray(data.usageLog) ? data.usageLog : [],
     };
   } catch (err: any) {
-    return { ok: false, message: err?.message || "Failed to fetch usage data." };
+    return {
+      ok: false,
+      message: err?.message || "Failed to fetch usage data.",
+    };
   }
 }

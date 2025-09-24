@@ -9,13 +9,17 @@ const CreateApiKeys = ({ organisationUid, onCreated }: { organisationUid?: strin
   const handleCreateApiKey = async () => {
     setLoading(true);
     try {
-      const idToken = localStorage.getItem("authToken");
-      if (!idToken) {
+      // Get session cookie from browser
+      const sessionCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("session="))
+        ?.split("=")[1];
+      if (!sessionCookie) {
         toast.error("Not authenticated.");
         setLoading(false);
         return;
       }
-      const res = await createApiKeyForOrg({ idToken, organisationUid });
+      const res = await createApiKeyForOrg({ sessionCookie, organisationUid });
       if (res.ok && res.apiKey) {
         toast.success(res.message || "API Key created!");
         onCreated();
