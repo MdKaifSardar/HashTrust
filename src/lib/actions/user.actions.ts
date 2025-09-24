@@ -611,6 +611,7 @@ export async function loginUser(
   role = "user"
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
   try {
+    getOrInitAdminApp(); // <-- Add this line at the start
     const auth = getAuth(firebaseApp);
     // 1. Find user in Firestore by email and role
     const adminDb = getAdminFirestore();
