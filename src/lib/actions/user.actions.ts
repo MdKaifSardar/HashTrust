@@ -9,11 +9,35 @@ import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import { getContract } from "@/utils/contract";
 import { generateUserDataHash } from "@/utils/generateDataHash";
 import { uploadHash } from "@/utils/uploadHash";
+
+let adminInitialized = false;
+
+function getOrInitAdminApp() {
+  if (typeof window !== "undefined") return; // Never run admin SDK on client
+  if (!adminInitialized && !admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      }),
+    });
+    adminInitialized = true;
+  }
+  return admin;
+}
 
 // Firebase config
 const firebaseConfig = {
@@ -45,23 +69,6 @@ export interface CreateUserResult {
   user: User | null;
   idToken: string | null;
   error: string | null;
-}
-
-let adminInitialized = false;
-
-function getOrInitAdminApp() {
-  if (typeof window !== "undefined") return; // Never run admin SDK on client
-  if (!adminInitialized && !admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      }),
-    });
-    adminInitialized = true;
-  }
-  return admin;
 }
 
 // Modified Cloudinary upload to extract public_id
@@ -107,7 +114,6 @@ export async function createUser(
   idNumber?: string // Aadhaar number
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
   try {
-    const auth = getAuth(firebaseApp);
     // ✅ Convert base64 to File
     const base64ToFile = (base64: string, filename: string): File => {
       const arr = base64.split(",");
@@ -117,6 +123,7 @@ export async function createUser(
       for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
       return new File([u8arr], filename, { type: mime });
     };
+    const auth = getAuth(firebaseApp);
 
     // ✅ Step 1: Create Firebase Auth user
     let userCredential;
@@ -155,18 +162,24 @@ export async function createUser(
         if (!userSnap.empty) {
           return {
             ok: false,
-            message: "This email is already registered as a user. Please use another email or log in.",
+            message:
+              "This email is already registered as a user. Please use another email or log in.",
           };
         }
         // If no user doc exists, sign in to get Firebase UID and proceed
         let firebaseUser: FirebaseUser;
         try {
-          const signInRes = await signInWithEmailAndPassword(auth, emailAddress, password);
+          const signInRes = await signInWithEmailAndPassword(
+            auth,
+            emailAddress,
+            password
+          );
           firebaseUser = signInRes.user;
         } catch (signInErr: any) {
           return {
             ok: false,
-            message: "Email exists but password is incorrect. Please log in or use a different email.",
+            message:
+              "Email exists but password is incorrect. Please log in or use a different email.",
           };
         }
 
@@ -200,13 +213,18 @@ export async function createUser(
         // Step 3: Upload user image to Cloudinary
         if (userImageFileObj) {
           try {
-            const result = await uploadAndExtract(userImageFileObj, "user_images");
+            const result = await uploadAndExtract(
+              userImageFileObj,
+              "user_images"
+            );
             userImageUrl = result.url;
             userImagePublicId = result.public_id;
           } catch (err: any) {
             return {
               ok: false,
-              message: "Failed to upload user image: " + (err.message || "Unknown error"),
+              message:
+                "Failed to upload user image: " +
+                (err.message || "Unknown error"),
             };
           }
         } else {
@@ -228,7 +246,9 @@ export async function createUser(
           } catch (err: any) {
             return {
               ok: false,
-              message: "Failed to upload identity document: " + (err.message || "Unknown error"),
+              message:
+                "Failed to upload identity document: " +
+                (err.message || "Unknown error"),
             };
           }
         } else {
@@ -253,7 +273,9 @@ export async function createUser(
         } catch (err: any) {
           return {
             ok: false,
-            message: "Failed to update user profile: " + (err.message || "Unknown error"),
+            message:
+              "Failed to update user profile: " +
+              (err.message || "Unknown error"),
           };
         }
         // Step 6: Get ID token
@@ -264,7 +286,9 @@ export async function createUser(
         } catch (err: any) {
           return {
             ok: false,
-            message: "Failed to get authentication token: " + (err.message || "Unknown error"),
+            message:
+              "Failed to get authentication token: " +
+              (err.message || "Unknown error"),
           };
         }
 
@@ -284,7 +308,10 @@ export async function createUser(
           dateOfBirth,
           identityDocument:
             identityDocumentUrl && identityDocumentPublicId
-              ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
+              ? {
+                  url: identityDocumentUrl,
+                  public_id: identityDocumentPublicId,
+                }
               : null,
           verificationStatus: verificationStatus || null,
           createdAt: new Date().toISOString(),
@@ -304,7 +331,10 @@ export async function createUser(
           dateOfBirth,
           identityDocument:
             identityDocumentUrl && identityDocumentPublicId
-              ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
+              ? {
+                  url: identityDocumentUrl,
+                  public_id: identityDocumentPublicId,
+                }
               : null,
           verificationStatus: verificationStatus || null,
           createdAt: new Date().toISOString(),
@@ -318,7 +348,9 @@ export async function createUser(
         } catch (err: any) {
           return {
             ok: false,
-            message: "Failed to save user data to Firestore: " + (err.message || "Unknown error"),
+            message:
+              "Failed to save user data to Firestore: " +
+              (err.message || "Unknown error"),
           };
         }
 
@@ -407,7 +439,8 @@ export async function createUser(
       } catch (err: any) {
         return {
           ok: false,
-          message: "Failed to upload user image: " + (err.message || "Unknown error"),
+          message:
+            "Failed to upload user image: " + (err.message || "Unknown error"),
         };
       }
     } else {
@@ -429,7 +462,9 @@ export async function createUser(
       } catch (err: any) {
         return {
           ok: false,
-          message: "Failed to upload identity document: " + (err.message || "Unknown error"),
+          message:
+            "Failed to upload identity document: " +
+            (err.message || "Unknown error"),
         };
       }
     } else {
@@ -454,7 +489,8 @@ export async function createUser(
     } catch (err: any) {
       return {
         ok: false,
-        message: "Failed to update user profile: " + (err.message || "Unknown error"),
+        message:
+          "Failed to update user profile: " + (err.message || "Unknown error"),
       };
     }
     // Step 6: Get ID token
@@ -465,7 +501,9 @@ export async function createUser(
     } catch (err: any) {
       return {
         ok: false,
-        message: "Failed to get authentication token: " + (err.message || "Unknown error"),
+        message:
+          "Failed to get authentication token: " +
+          (err.message || "Unknown error"),
       };
     }
 
@@ -519,7 +557,9 @@ export async function createUser(
     } catch (err: any) {
       return {
         ok: false,
-        message: "Failed to save user data to Firestore: " + (err.message || "Unknown error"),
+        message:
+          "Failed to save user data to Firestore: " +
+          (err.message || "Unknown error"),
       };
     }
 
@@ -574,11 +614,13 @@ export async function loginUser(
     const auth = getAuth(firebaseApp);
     // 1. Find user in Firestore by email and role
     const adminDb = getAdminFirestore();
-    const userSnap = await adminDb.collection("users")
+    const userSnap = await adminDb
+      .collection("users")
       .where("emailAddress", "==", email)
       .where("role", "==", role)
       .limit(1)
       .get();
+
     if (userSnap.empty) {
       return {
         ok: false,
@@ -616,12 +658,19 @@ export async function loginUser(
         message: "Incorrect credentials.",
       };
     }
+
     const firebaseUser = userCredential.user;
     let idToken: string | undefined;
     try {
       idToken = await firebaseUser.getIdToken();
       // Set custom claim for role
       const adminApp = getOrInitAdminApp();
+      if (!adminApp) {
+        return {
+          ok: false,
+          message: "Admin SDK not initialized. Server-side operation required.",
+        };
+      }
       if (adminApp) {
         const adminAuth = adminApp.auth();
         await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
@@ -633,7 +682,7 @@ export async function loginUser(
     }
 
     // Create session cookie
-    let adminApp = getOrInitAdminApp();
+    const adminApp = getOrInitAdminApp();
     if (!adminApp) {
       return {
         ok: false,
@@ -667,12 +716,18 @@ export async function authenticateUserWithSessionCookie(
     }
     let adminApp = getOrInitAdminApp();
     if (!adminApp) {
-      return { ok: false, message: "Admin SDK not initialized. Server-side operation required." };
+      return {
+        ok: false,
+        message: "Admin SDK not initialized. Server-side operation required.",
+      };
     }
     const adminAuth = adminApp.auth();
     const adminDb = adminApp.firestore();
     // Verify the session cookie
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedToken = await adminAuth.verifySessionCookie(
+      sessionCookie,
+      true
+    );
     const uid = decodedToken.uid;
     const role = decodedToken.role; // <-- get role from session cookie
 
@@ -685,7 +740,11 @@ export async function authenticateUserWithSessionCookie(
       .get();
 
     if (userDocSnap.empty) {
-      return { ok: false, message: "User not found in database for this role.", user: null };
+      return {
+        ok: false,
+        message: "User not found in database for this role.",
+        user: null,
+      };
     }
     let userData = userDocSnap.docs[0].data();
 
@@ -724,16 +783,25 @@ export async function getRoleFromSessionCookie(
     }
     const adminApp = getOrInitAdminApp();
     if (!adminApp) {
-      return { ok: false, message: "Admin SDK not initialized. Server-side operation required." };
+      return {
+        ok: false,
+        message: "Admin SDK not initialized. Server-side operation required.",
+      };
     }
     const adminAuth = adminApp.auth();
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedToken = await adminAuth.verifySessionCookie(
+      sessionCookie,
+      true
+    );
     const role = decodedToken.role;
     if (!role) {
       return { ok: false, message: "Role not found in session cookie." };
     }
     return { ok: true, role, message: `Role is ${role}` };
   } catch (err: any) {
-    return { ok: false, message: err?.message || "Failed to determine role from session cookie." };
+    return {
+      ok: false,
+      message: err?.message || "Failed to determine role from session cookie.",
+    };
   }
 }
