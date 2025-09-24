@@ -86,7 +86,7 @@ const FaceSimilarityCheck: React.FC = () => {
     dispatch(setApiResult(null));
     dispatch(setLoading(true));
     dispatch(setError(null));
-    toast.info("Checking face similarity...");
+    // toast.info("Checking face similarity...");
     try {
       const mainFile = await urlOrBase64ToFile(
         extractedFacePreview,
@@ -104,9 +104,9 @@ const FaceSimilarityCheck: React.FC = () => {
 
       dispatch(setApiResult(apiRes));
 
-      // Use 75 as threshold for match
+      // Use only API result for match
       const confidence = apiRes.confidence ?? 0;
-      const isMatch = confidence >= 75;
+      const isMatch = apiRes.isMatch ?? false;
 
       if (apiRes.ok) {
         dispatch(
@@ -173,8 +173,8 @@ const FaceSimilarityCheck: React.FC = () => {
           <FiChevronRight size={28} />
         </button>
       </div>
-
       <div className="w-full flex flex-col items-center">
+        <ToastContainer position="top-right" />
         <h2 className="text-2xl font-bold mb-4 text-blue-700">
           Face Similarity Check
         </h2>
@@ -207,6 +207,21 @@ const FaceSimilarityCheck: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="flex gap-4 mb-4">
+          <button
+            type="button"
+            onClick={handleCheckSimilarity}
+            disabled={disableAll || !extractedFacePreview || !userImagePreview}
+            className={`px-6 py-2 rounded shadow font-semibold ${
+              disableAll || !extractedFacePreview || !userImagePreview
+                ? "bg-blue-300 text-white cursor-not-allowed"
+                : "bg-blue-500 text-white hover:bg-blue-600"
+            }`}
+          >
+            {hasChecked ? "Recheck" : "Check Similarity"}
+          </button>
         </div>
 
         <div className="mt-[.5rem] text-gray-700 text-sm w-full flex flex-col items-center">

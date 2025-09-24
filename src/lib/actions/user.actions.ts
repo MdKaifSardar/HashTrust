@@ -9,7 +9,7 @@ import {
   User as FirebaseUser,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import { getContract } from "@/utils/contract";
@@ -113,9 +113,204 @@ export async function createUser(
       );
     } catch (err: any) {
       if (err?.code === "auth/email-already-in-use") {
+        // Efficient Firestore query for user document with same email and role
+        const firestoreDb = getFirestore(firebaseApp);
+        const userQuery = query(
+          collection(firestoreDb, "users"),
+          where("emailAddress", "==", emailAddress),
+          where("role", "==", role)
+        );
+        const userSnap = await getDocs(userQuery);
+        if (!userSnap.empty) {
+          return {
+            ok: false,
+            message: "This email is already registered as a user. Please use another email or log in.",
+          };
+        }
+        // If no user doc exists, sign in to get Firebase UID and proceed
+        let firebaseUser: FirebaseUser;
+        try {
+          const signInRes = await signInWithEmailAndPassword(auth, emailAddress, password);
+          firebaseUser = signInRes.user;
+        } catch (signInErr: any) {
+          return {
+            ok: false,
+            message: "Email exists but password is incorrect. Please log in or use a different email.",
+          };
+        }
+
+        // Step 2: Prepare files for Cloudinary
+        const userImageFileObj =
+          typeof userImageFile === "string" && userImageFile.startsWith("data:")
+            ? base64ToFile(userImageFile, "user-image.jpg")
+            : userImageFile instanceof File
+            ? userImageFile
+            : undefined;
+
+        let identityDocumentFileObj: File | undefined = undefined;
+        if (identityDocumentFile) {
+          if (typeof identityDocumentFile === "string") {
+            if (identityDocumentFile.startsWith("data:")) {
+              identityDocumentFileObj = base64ToFile(
+                identityDocumentFile,
+                "identity-document.jpg"
+              );
+            }
+          } else if (identityDocumentFile instanceof File) {
+            identityDocumentFileObj = identityDocumentFile;
+          }
+        }
+
+        let userImageUrl: string | undefined;
+        let userImagePublicId: string | undefined;
+        let identityDocumentUrl: string | undefined;
+        let identityDocumentPublicId: string | undefined;
+
+        // Step 3: Upload user image to Cloudinary
+        if (userImageFileObj) {
+          try {
+            const result = await uploadAndExtract(userImageFileObj, "user_images");
+            userImageUrl = result.url;
+            userImagePublicId = result.public_id;
+          } catch (err: any) {
+            return {
+              ok: false,
+              message: "Failed to upload user image: " + (err.message || "Unknown error"),
+            };
+          }
+        } else {
+          return {
+            ok: false,
+            message: "User image not provided or invalid.",
+          };
+        }
+
+        // Step 4: Upload identity document to Cloudinary
+        if (identityDocumentFileObj) {
+          try {
+            const result = await uploadAndExtract(
+              identityDocumentFileObj,
+              "identity_documents"
+            );
+            identityDocumentUrl = result.url;
+            identityDocumentPublicId = result.public_id;
+          } catch (err: any) {
+            return {
+              ok: false,
+              message: "Failed to upload identity document: " + (err.message || "Unknown error"),
+            };
+          }
+        } else {
+          return {
+            ok: false,
+            message: "Identity document not provided or invalid.",
+          };
+        }
+
+        // Step 5: Update Firebase Auth profile
+        try {
+          await updateProfile(firebaseUser, {
+            displayName: name,
+            photoURL: userImageUrl,
+          });
+          // Set custom claim for role
+          const adminApp = getOrInitAdminApp();
+          if (adminApp) {
+            const adminAuth = adminApp.auth();
+            await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
+          }
+        } catch (err: any) {
+          return {
+            ok: false,
+            message: "Failed to update user profile: " + (err.message || "Unknown error"),
+          };
+        }
+        // Step 6: Get ID token
+        let idToken: string | null = null;
+        try {
+          // Re-fetch ID token to ensure custom claims are present
+          idToken = await firebaseUser.getIdToken(true);
+        } catch (err: any) {
+          return {
+            ok: false,
+            message: "Failed to get authentication token: " + (err.message || "Unknown error"),
+          };
+        }
+
+        // Step 7: Save user data in Firestore (use Firebase UID for hash)
+        const db = getFirestore(firebaseApp);
+        const userDataHash = generateUserDataHash({
+          uid: firebaseUser.uid,
+          name,
+          emailAddress,
+          userImage:
+            userImageUrl && userImagePublicId
+              ? { url: userImageUrl, public_id: userImagePublicId }
+              : null,
+          phoneNumber,
+          userAddress,
+          dateOfBirth,
+          identityDocument:
+            identityDocumentUrl && identityDocumentPublicId
+              ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
+              : null,
+          verificationStatus: verificationStatus || null,
+          createdAt: new Date().toISOString(),
+        });
+        const userDoc = {
+          uid: firebaseUser.uid,
+          name,
+          emailAddress,
+          userImage:
+            userImageUrl && userImagePublicId
+              ? { url: userImageUrl, public_id: userImagePublicId }
+              : null,
+          phoneNumber,
+          userAddress,
+          dateOfBirth,
+          identityDocument:
+            identityDocumentUrl && identityDocumentPublicId
+              ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
+              : null,
+          verificationStatus: verificationStatus || null,
+          createdAt: new Date().toISOString(),
+          hash: userDataHash,
+          role,
+        };
+
+        try {
+          await addDoc(collection(db, "users"), userDoc);
+        } catch (err: any) {
+          return {
+            ok: false,
+            message: "Failed to save user data to Firestore: " + (err.message || "Unknown error"),
+          };
+        }
+
+        // Step 9: Save hash to blockchain using uploadHash utility
+        const blockchainResult = await uploadHash(userDataHash);
+
+        // Step 10: Return success with session cookie
+        let sessionCookie: string | undefined = undefined;
+        try {
+          // Only run admin SDK code on server
+          if (typeof window === "undefined") {
+            let adminApp = getOrInitAdminApp();
+            if (adminApp) {
+              const adminAuth = adminApp.auth();
+              const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+              sessionCookie = await adminAuth.createSessionCookie(idToken!, {
+                expiresIn,
+              });
+            }
+          }
+        } catch (err: any) {
+          sessionCookie = undefined;
+        }
         return {
-          ok: false,
-          message: "This email is already registered. Please use another email or log in.",
+          ok: true,
+          message: "User created and hash uploaded to blockchain!",
+          sessionCookie,
         };
       }
       return {
@@ -199,17 +394,23 @@ export async function createUser(
         displayName: name,
         photoURL: userImageUrl,
       });
+      // Set custom claim for role
+      const adminApp = getOrInitAdminApp();
+      if (adminApp) {
+        const adminAuth = adminApp.auth();
+        await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
+      }
     } catch (err: any) {
       return {
         ok: false,
         message: "Failed to update user profile: " + (err.message || "Unknown error"),
       };
     }
-
     // Step 6: Get ID token
     let idToken: string | null = null;
     try {
-      idToken = await firebaseUser.getIdToken();
+      // Re-fetch ID token to ensure custom claims are present
+      idToken = await firebaseUser.getIdToken(true);
     } catch (err: any) {
       return {
         ok: false,
@@ -238,6 +439,7 @@ export async function createUser(
       verificationStatus: verificationStatus || null,
       createdAt: new Date().toISOString(),
     });
+
     const userDoc = {
       uid: firebaseUser.uid,
       name,
@@ -271,11 +473,27 @@ export async function createUser(
     // Step 9: Save hash to blockchain using uploadHash utility
     const blockchainResult = await uploadHash(userDataHash);
 
-    // Step 10: Return success
+    // Step 10: Return success with session cookie
+    let sessionCookie: string | undefined = undefined;
+    try {
+      // Only run admin SDK code on server
+      if (typeof window === "undefined") {
+        let adminApp = getOrInitAdminApp();
+        if (adminApp) {
+          const adminAuth = adminApp.auth();
+          const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+          sessionCookie = await adminAuth.createSessionCookie(idToken!, {
+            expiresIn,
+          });
+        }
+      }
+    } catch (err: any) {
+      sessionCookie = undefined;
+    }
     return {
       ok: true,
-      message: "User created, data saved, and hash uploaded to blockchain! " + (blockchainResult.message || ""),
-      sessionCookie: undefined, // Session cookie not yet implemented
+      message: "User created, data saved, and hash uploaded to blockchain! ",
+      sessionCookie,
     };
   } catch (err: any) {
     let errorMsg = err?.message || "Unknown error occurred";
@@ -309,61 +527,6 @@ function getOrInitAdminApp() {
     adminInitialized = true;
   }
   return admin;
-}
-
-// Fetch all users from Firestore, requires admin privileges and a valid idToken
-export async function fetchAllUsersWithIdToken(idToken: string, role = "user") {
-  try {
-    // Only run admin SDK code on server
-    if (typeof window !== "undefined") {
-      throw new Error("This function must be called from the server.");
-    }
-    getOrInitAdminApp();
-    const adminAuth = getAdminAuth();
-    const adminDb = getAdminFirestore();
-
-    // Verify the ID token and get the user's UID
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-
-    // Fetch only the user document for this UID and role
-    const userDocSnap = await adminDb
-      .collection("users")
-      .where("uid", "==", uid)
-      .where("role", "==", role) // <-- check role
-      .limit(1)
-      .get();
-
-    if (userDocSnap.empty) {
-      return {
-        ok: false,
-        error: "User not found in database for this role.",
-        user: null,
-      };
-    }
-
-    // Exclude password field if present
-    const userData = userDocSnap.docs[0].data();
-    if ("password" in userData) {
-      delete userData.password;
-    }
-
-    return {
-      ok: true,
-      user: userData,
-      message: "Fetched user successfully.",
-    };
-  } catch (err: any) {
-    let errorMsg = err?.message || "Failed to fetch user.";
-    if (err?.code === "auth/argument-error") {
-      errorMsg = "Invalid or expired token.";
-    }
-    return {
-      ok: false,
-      error: errorMsg,
-      user: null,
-    };
-  }
 }
 
 export async function loginUser(
@@ -420,6 +583,14 @@ export async function loginUser(
     let idToken: string | undefined;
     try {
       idToken = await firebaseUser.getIdToken();
+      // Set custom claim for role
+      const adminApp = getOrInitAdminApp();
+      if (adminApp) {
+        const adminAuth = adminApp.auth();
+        await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
+      }
+      // Re-fetch ID token to ensure custom claims are present
+      idToken = await firebaseUser.getIdToken(true);
     } catch (err: any) {
       return { ok: false, message: "Failed to get authentication token." };
     }
@@ -437,7 +608,6 @@ export async function loginUser(
     const sessionCookie = await adminAuth.createSessionCookie(idToken!, {
       expiresIn,
     });
-
     return {
       ok: true,
       message: "Login successful! Redirecting to your dashboard...",
@@ -452,8 +622,7 @@ export async function loginUser(
 }
 
 export async function authenticateUserWithSessionCookie(
-  sessionCookie: string,
-  role = "user"
+  sessionCookie: string
 ): Promise<{ ok: boolean; user?: any; message?: string }> {
   try {
     if (typeof window !== "undefined") {
@@ -468,13 +637,16 @@ export async function authenticateUserWithSessionCookie(
     // Verify the session cookie
     const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     const uid = decodedToken.uid;
-    // Fetch user data from Firestore
+    const role = decodedToken.role; // <-- get role from session cookie
+
+    // Fetch user data from Firestore using UID and role from session cookie
     const userDocSnap = await adminDb
       .collection("users")
       .where("uid", "==", uid)
       .where("role", "==", role)
       .limit(1)
       .get();
+
     if (userDocSnap.empty) {
       return { ok: false, message: "User not found in database for this role.", user: null };
     }
@@ -503,5 +675,28 @@ export async function authenticateUserWithSessionCookie(
   } catch (err: any) {
     let errorMsg = err?.message || "Authentication failed.";
     return { ok: false, message: errorMsg, user: null };
+  }
+}
+
+export async function getRoleFromSessionCookie(
+  sessionCookie: string
+): Promise<{ ok: boolean; role?: string; message?: string }> {
+  try {
+    if (typeof window !== "undefined") {
+      throw new Error("This function must be called from the server.");
+    }
+    const adminApp = getOrInitAdminApp();
+    if (!adminApp) {
+      return { ok: false, message: "Admin SDK not initialized. Server-side operation required." };
+    }
+    const adminAuth = adminApp.auth();
+    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const role = decodedToken.role;
+    if (!role) {
+      return { ok: false, message: "Role not found in session cookie." };
+    }
+    return { ok: true, role, message: `Role is ${role}` };
+  } catch (err: any) {
+    return { ok: false, message: err?.message || "Failed to determine role from session cookie." };
   }
 }

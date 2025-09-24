@@ -77,6 +77,12 @@ export async function createOrganisation({
     try {
       await updateProfile(firebaseUser, { displayName: orgName });
       idToken = await firebaseUser.getIdToken();
+      // Set custom claim for role
+      const adminApp = getOrInitAdminApp();
+      if (adminApp) {
+        const adminAuth = adminApp.auth();
+        await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
+      }
     } catch (err: any) {
       return {
         ok: false,
@@ -111,6 +117,10 @@ export async function createOrganisation({
     }
     const adminAuth = adminApp.auth();
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    // Re-fetch ID token to ensure custom claims are present
+    if (idToken) {
+      idToken = await firebaseUser.getIdToken(true);
+    }
     const sessionCookie = await adminAuth.createSessionCookie(idToken!, {
       expiresIn,
     });
@@ -160,6 +170,12 @@ export async function loginOrganisation({
     let idToken: string | undefined;
     try {
       idToken = await firebaseUser.getIdToken();
+      // Set custom claim for role
+      const adminApp = getOrInitAdminApp();
+      if (adminApp) {
+        const adminAuth = adminApp.auth();
+        await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
+      }
     } catch (err: any) {
       return { ok: false, message: "Failed to get authentication token." };
     }
@@ -187,6 +203,10 @@ export async function loginOrganisation({
     }
     const adminAuth = adminApp.auth();
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    // Re-fetch ID token to ensure custom claims are present
+    if (idToken) {
+      idToken = await firebaseUser.getIdToken(true);
+    }
     const sessionCookie = await adminAuth.createSessionCookie(idToken!, {
       expiresIn,
     });
@@ -201,8 +221,7 @@ export async function loginOrganisation({
 }
 
 export async function authenticateOrgWithSessionCookie(
-  sessionCookie: string,
-  role = "organisation"
+  sessionCookie: string
 ): Promise<{ ok: boolean; organisation?: any; message?: string }> {
   try {
     if (typeof window !== "undefined") {
@@ -217,13 +236,16 @@ export async function authenticateOrgWithSessionCookie(
     // Verify the session cookie
     const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     const uid = decodedToken.uid;
-    // Fetch organisation data from Firestore
+    const role = decodedToken.role; // <-- get role from session cookie
+
+    // Fetch organisation data from Firestore using UID and role from session cookie
     const orgDocSnap = await adminDb
       .collection("organisations")
       .where("uid", "==", uid)
       .where("role", "==", role)
       .limit(1)
       .get();
+
     if (orgDocSnap.empty) {
       return { ok: false, message: "Organisation not found in database for this role." };
     }

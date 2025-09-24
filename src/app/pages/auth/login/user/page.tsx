@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import LoginFormComponent from "@/components/UserLoginFormComponent";
 import { ToastContainer } from "react-toastify";
+import UserLoginFormComponent from "@/components/UserLoginFormComponent";
 
 export default function LoginPage() {
   const [shouldRender, setShouldRender] = useState(false);
@@ -22,11 +22,9 @@ export default function LoginPage() {
   if (!shouldRender) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen flex items-center justify-center w-full bg-gradient-to-br from-blue-50 to-blue-100">
       <ToastContainer />
-      <div className="w-full max-w-lg">
-        <LoginFormComponent />
-      </div>
+      <UserLoginFormComponent />
     </div>
   );
 }

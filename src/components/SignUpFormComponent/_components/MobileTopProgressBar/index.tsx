@@ -15,51 +15,73 @@ const steps = [
 
 const MobileTopProgressBar: React.FC = () => {
   const currentStep = useSelector(selectCurrentStep);
-  const [hovered, setHovered] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
+
+  // Helper to handle mobile click/tap
+  const handleBlobClick = (idx: number) => {
+    if (activeTooltip === idx) setActiveTooltip(null);
+    else setActiveTooltip(idx);
+  };
 
   return (
-    <div className="sm:hidden w-full flex flex-col items-center pt-6 pb-2 bg-blue-50 border-b border-blue-100">
+    <div className="sm:hidden w-full flex flex-col items-center pt-6 pb-2 bg-blue-50 border-b border-blue-100 overflow-x-hidden">
       <Link
         href="/"
         className="mb-4 flex items-center gap-2 text-blue-700 hover:text-cyan-500 font-semibold text-base group relative"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         <span className="text-xl">
           <FiArrowLeft />
         </span>
-        {hovered && (
-          <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded shadow transition-all duration-200 whitespace-nowrap">
-            Back to Home
-          </span>
-        )}
       </Link>
-      <div className="flex items-center w-full justify-center gap-2">
-        {steps.map((step, idx) => (
-          <React.Fragment key={step.label}>
-            <div className="flex flex-col items-center">
+      {/* Responsive progress bar */}
+      <div className="w-full flex items-center justify-center px-2 overflow-x-auto">
+        <div className="flex items-center justify-center w-full gap-2">
+          {steps.map((step, idx) => (
+            <div
+              key={step.label}
+              className="relative group flex flex-col items-center"
+              // Show tooltip on hover for desktop, on click for mobile
+              onMouseEnter={() => window.innerWidth > 640 && setActiveTooltip(idx)}
+              onMouseLeave={() => window.innerWidth > 640 && setActiveTooltip(null)}
+              onClick={() => window.innerWidth <= 640 && handleBlobClick(idx)}
+              style={{ minWidth: 0 }}
+            >
               <div
-                className={`w-7 h-7 flex items-center justify-center rounded-full border-2 ${
-                  idx <= currentStep
-                    ? "bg-blue-500 border-blue-500 text-white"
-                    : "bg-gray-200 border-gray-300 text-gray-500"
-                }`}
+                className={`w-7 h-7 flex items-center justify-center rounded-full border-2
+                  ${
+                    idx <= currentStep
+                      ? "bg-blue-500 border-blue-500 text-white"
+                      : "bg-gray-200 border-gray-300 text-gray-500"
+                  }
+                `}
+                style={{
+                  minWidth: 28,
+                  minHeight: 28,
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
               >
                 {idx + 1}
               </div>
-              <span
-                className={`mt-1 text-xs font-medium text-center ${
-                  idx <= currentStep ? "text-blue-600" : "text-gray-400"
-                }`}
-              >
-                {step.label}
-              </span>
+              {/* Tooltip for step label */}
+              {activeTooltip === idx && (
+                <span
+                  className="absolute z-10 px-2 py-1 rounded bg-blue-700 text-white text-xs font-medium shadow whitespace-nowrap"
+                  style={{
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    bottom: "110%",
+                    minWidth: "max-content",
+                    maxWidth: "160px",
+                    textAlign: "center",
+                  }}
+                >
+                  {step.label}
+                </span>
+              )}
             </div>
-            {idx < steps.length - 1 && (
-              <div className="w-6 h-1 bg-gray-300 mx-1 rounded" />
-            )}
-          </React.Fragment>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

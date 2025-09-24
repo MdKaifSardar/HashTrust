@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
+import { createOrganisation } from "@/lib/actions/org.actions";
 
 const OrgSignupComp = () => {
   const [orgName, setOrgName] = useState("");
@@ -17,24 +18,29 @@ const OrgSignupComp = () => {
     setLoading(true);
     setError("");
     setSuccess("");
-    // Call API route that sets session cookie
-    const res = await fetch("/api/org-signup", {
-      method: "POST",
-      body: JSON.stringify({ orgName, email, password, contactPerson }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (data.ok) {
-      setSuccess(data.message);
-      toast.success(data.message);
-      // Session cookie is set by backend, no need to store token in localStorage
-      setTimeout(() => {
-        window.location.href = "/pages/organisation/dashboard";
-      }, 1200);
-    } else {
-      setError(data.message);
-      toast.error(data.message);
+    try {
+      const res = await createOrganisation({
+        orgName,
+        email,
+        password,
+        contactPerson,
+      });
+      setLoading(false);
+      if (res.ok && res.sessionCookie) {
+        document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Strict; Secure`;
+        setSuccess(res.message || "Organisation account created successfully!");
+        toast.success(res.message || "Organisation account created successfully!");
+        setTimeout(() => {
+          window.location.href = "/pages/organisation/dashboard";
+        }, 1200);
+      } else {
+        setError(res.message || "Sign up failed.");
+        toast.error(res.message || "Sign up failed.");
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setError(err?.message || "Sign up failed.");
+      toast.error(err?.message || "Sign up failed.");
     }
   };
 
@@ -51,7 +57,8 @@ const OrgSignupComp = () => {
       </div>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-lg mx-auto bg-white/90 rounded-2xl shadow-2xl px-8 py-10 flex flex-col gap-8 border border-blue-100 backdrop-blur-md"
+        className="w-[90%] sm:w-[50%] lg:w-[40%] xl:w-[30%] mx-auto bg-white/90 rounded-2xl shadow-2xl px-8 py-10 flex flex-col gap-8 border border-blue-100 backdrop-blur-md
+          mt-12 sm:mt-0"
       >
         <h2 className="text-3xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-400">
           Organisation Sign Up

@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import LogoutModal from "@/components/Navbar/_components/LogoutModal";
+import SideMenu from "@/components/Navbar/_components/SideMenu";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 
 export default function LayoutComponent({
@@ -12,6 +14,7 @@ export default function LayoutComponent({
   const pathname = usePathname();
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   // Only use session cookie for authentication state
   const hasSessionCookie = () =>
@@ -27,6 +30,11 @@ export default function LayoutComponent({
     ) {
       router.replace("/");
     }
+    // Listen for logout modal trigger from SideMenu
+    const showLogoutModalHandler = () => setShowLogoutModal(true);
+    window.addEventListener("showLogoutModal", showLogoutModalHandler);
+    return () =>
+      window.removeEventListener("showLogoutModal", showLogoutModalHandler);
   }, [pathname, router]);
 
   // Return null for the entire layout if blocking access
@@ -41,6 +49,7 @@ export default function LayoutComponent({
   const handleLogout = () => {
     document.cookie = "session=; path=/; max-age=0; SameSite=Strict; Secure";
     window.dispatchEvent(new Event("sessionChanged"));
+    window.dispatchEvent(new Event("logoutConfirmed")); // Notify SideMenu to close modal if needed
     setShowLogoutModal(false);
     router.push("/");
   };
@@ -50,8 +59,29 @@ export default function LayoutComponent({
   return (
     <>
       {!isAuthPage ? (
-        <Navbar onLogoutClick={() => setShowLogoutModal(true)} />
+        <Navbar
+          onLogoutClick={() => setShowLogoutModal(true)}
+          onSideMenuToggle={() => setSideMenuOpen((v) => !v)}
+        />
       ) : null}
+      <AnimatePresence>
+        {sideMenuOpen && (
+          <motion.div
+            className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            onClick={() => setSideMenuOpen(false)}
+          >
+            <SideMenu
+              open={sideMenuOpen}
+              setOpen={setSideMenuOpen}
+              hasAuth={hasSessionCookie()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <main className={isAuthPage ? "pt-0" : "pt-[3.5rem]"}>{children}</main>
       {showLogoutModal && (
         <LogoutModal

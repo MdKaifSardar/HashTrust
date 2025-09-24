@@ -44,10 +44,10 @@ const OrgLoginForm = () => {
           <span className="text-xl">&#8592;</span> Back to Home
         </Link>
       </div>
-      <ToastContainer />
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md mx-auto bg-white/90 rounded-2xl shadow-2xl px-8 py-10 flex flex-col gap-8 border border-blue-100 backdrop-blur-md"
+        className="w-[90%] sm:w-[50%] lg:w-[40%] xl:w-[30%] mx-auto bg-white/90 rounded-2xl shadow-2xl px-8 py-10 flex flex-col gap-8 border border-blue-100 backdrop-blur-md
+          mt-12 sm:mt-0"
       >
         <h2 className="text-3xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-cyan-400 to-emerald-400">
           Organisation Login

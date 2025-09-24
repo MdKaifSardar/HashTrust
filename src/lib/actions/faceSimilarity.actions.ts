@@ -49,8 +49,8 @@ export async function compareFacesAction(formData: FormData) {
       };
     }
 
-    // ✅ threshold check
-    const threshold = 75;
+    // ✅ threshold check (only here)
+    const threshold = 70;
     const isMatch = data.confidence >= threshold;
 
     return {
@@ -58,7 +58,7 @@ export async function compareFacesAction(formData: FormData) {
       confidence: data.confidence,
       isMatch,
       message: isMatch
-        ? `Faces match `
+        ? `Faces match`
         : `Faces do not match`,
     };
   } catch (err: any) {

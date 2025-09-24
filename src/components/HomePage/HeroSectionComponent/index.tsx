@@ -29,7 +29,7 @@ const HeroSectionComponent = () => {
         identity, verified and anchored for life.
       </motion.p>
       <motion.a
-        href="/pages/auth/signup"
+        href="/pages/auth/sign-up/user"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}

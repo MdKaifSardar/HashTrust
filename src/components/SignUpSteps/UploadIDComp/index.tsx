@@ -145,7 +145,7 @@ const UploadIDComp: React.FC = () => {
           <FiChevronRight size={28} />
         </button>
       </div>
-      <label className="block font-medium mb-2 text-gray-700">
+      <label className="block text-center font-medium mb-2 text-gray-700">
         Upload Identity Document (Aadhaar card, JPEG/JPG)
       </label>
       <div className="flex items-center gap-4 mb-4">
@@ -211,22 +211,8 @@ const UploadIDComp: React.FC = () => {
               : "bg-blue-500 text-white hover:bg-blue-600"
           }`}
         >
-          Extract
+          {faceImage ? "Re-extract" : "Extract"}
         </button>
-        {faceImage && identityDocumentFile === lastUploadedFile && (
-          <button
-            type="button"
-            onClick={handleExtractFace}
-            disabled={extracting || loading || !identityDocumentFile}
-            className={`px-6 py-2 rounded shadow transition font-semibold ${
-              extracting || loading || !identityDocumentFile
-                ? "bg-yellow-300 text-white cursor-not-allowed"
-                : "bg-yellow-500 text-white hover:bg-yellow-600"
-            }`}
-          >
-            Re-extract
-          </button>
-        )}
       </div>
       {/* Add top margin to main content to avoid overlap with buttons */}
       <div className="mt-14 w-full flex flex-col items-center">

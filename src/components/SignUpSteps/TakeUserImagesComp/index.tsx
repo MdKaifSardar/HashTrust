@@ -18,7 +18,7 @@ import {
   selectCurrentStep,
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { useLivenessDetector } from "../../../utils/hooks/LivenessDetector";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { resetFaceSimilarityCheck } from "@/redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
@@ -34,6 +34,7 @@ const TakeUserImagesComp: React.FC = () => {
 
   const [capturing, setCapturing] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  const [livenessAbortController, setLivenessAbortController] = useState<AbortController | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -92,7 +93,6 @@ const TakeUserImagesComp: React.FC = () => {
   };
 
   // Take image and check liveness
-  // Take image and check liveness
   const handleTakePhoto = async () => {
     if (capturing || livenessLoading) return;
     setCapturing(true);
@@ -117,7 +117,6 @@ const TakeUserImagesComp: React.FC = () => {
 
       dispatch(resetFaceSimilarityCheck());
 
-      toast.success("Photo captured.");
       stopCamera(); // Stop camera immediately after photo is taken
 
       // Convert base64 to File for liveness check
@@ -129,18 +128,61 @@ const TakeUserImagesComp: React.FC = () => {
       while (n--) u8arr[n] = bstr.charCodeAt(n);
       const file = new File([u8arr], "user-image.jpg", { type: mime });
 
-      // Await liveness check and only then update UI/state
-      const liveness = await checkLiveness(file);
-      dispatch(setFaceLiveness(liveness));
+      // Setup abort controller for liveness check
+      const abortController = new AbortController();
+      setLivenessAbortController(abortController);
 
-      if (liveness.isLive) {
-        toast.success(`Face is LIVE! Realness Score: ${liveness.score}/10`);
+      // Await liveness check and only then update UI/state
+      const livenessPromise = checkLiveness(file);
+
+      // Wait for liveness check, but allow abort
+      let liveness;
+      try {
+        liveness = await Promise.race([
+          livenessPromise,
+          new Promise((_, reject) => {
+            abortController.signal.addEventListener("abort", () => reject(new Error("Liveness check cancelled")));
+          }),
+        ]);
+      } catch (e: any) {
+        if (e.message === "Liveness check cancelled") {
+          // Reset liveness state
+          dispatch(setFaceLiveness({ isLive: false, score: 0 }));
+          toast.info("Liveness check cancelled. Please retake your photo.");
+          setLivenessAbortController(null);
+          setCapturing(false);
+          return;
+        } else {
+          toast.error("Liveness check failed.");
+          setLivenessAbortController(null);
+          setCapturing(false);
+          return;
+        }
+      }
+
+      setLivenessAbortController(null);
+
+      const livenessResult = liveness as { isLive: boolean; score: number };
+      dispatch(setFaceLiveness(livenessResult));
+
+      if (livenessResult.isLive) {
+        toast.success(`Face is LIVE! Realness Score: ${livenessResult.score}/10`);
       } else {
         toast.error("Face is NOT LIVE. Please retake the photo.");
       }
     } catch (e: any) {
       toast.error("Liveness check failed.");
     } finally {
+      setCapturing(false);
+    }
+  };
+
+  // Cancel liveness check
+  const handleCancelLivenessCheck = () => {
+    if (livenessAbortController) {
+      livenessAbortController.abort();
+      dispatch(setFaceLiveness({ isLive: false, score: 0 }));
+      setLivenessAbortController(null);
       setCapturing(false);
     }
   };
@@ -206,8 +248,6 @@ const TakeUserImagesComp: React.FC = () => {
           <FiChevronRight size={28} />
         </button>
       </div>
-
-      <ToastContainer position="top-right" />
       <h2 className="text-2xl font-bold mb-4 text-blue-700 mt-12">
         Take Your Photo
       </h2>
@@ -260,7 +300,7 @@ const TakeUserImagesComp: React.FC = () => {
         </div>
       )}
 
-      <div className="flex gap-4 mt-4">
+      <div className="flex gap-4">
         <button
           type="button"
           onClick={image ? handleRetake : handleTakePhoto}
@@ -273,9 +313,17 @@ const TakeUserImagesComp: React.FC = () => {
         >
           {image ? "Retake" : "Take Image"}
         </button>
+        {livenessLoading && livenessAbortController && (
+          <button
+            type="button"
+            onClick={handleCancelLivenessCheck}
+            className="px-6 py-2 rounded shadow font-semibold bg-red-600 text-white hover:bg-red-700 border border-red-700 transition"
+          >
+            Cancel
+          </button>
+        )}
       </div>
-
-      <div className="mt-4 text-gray-500 text-sm">
+      <div className="p-2 text-center mt-4 text-gray-500 text-sm">
         {capturing
           ? "Working..."
           : livenessLoading

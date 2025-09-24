@@ -2,17 +2,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { NAV_LINKS } from "@/utils/data/Navbar";
-import { motion, AnimatePresence } from "framer-motion";
-import SideMenu from "@/components/Navbar/_components/SideMenu";
 import { useRouter } from "next/navigation";
+import { getRoleFromSessionCookie } from "@/lib/actions/user.actions";
 
 // Helper to check for session cookie
 function hasSessionCookie() {
   return document.cookie.split("; ").some((row) => row.startsWith("session="));
 }
 
-const Navbar = ({ onLogoutClick }: { onLogoutClick?: () => void }) => {
-  const [open, setOpen] = useState(false);
+const Navbar = ({ onLogoutClick, onSideMenuToggle }: { onLogoutClick?: () => void; onSideMenuToggle?: () => void }) => {
   const [hasAuth, setHasAuth] = useState(false);
   const [signupDropdown, setSignupDropdown] = useState(false);
   const [loginDropdown, setLoginDropdown] = useState(false);
@@ -51,9 +49,49 @@ const Navbar = ({ onLogoutClick }: { onLogoutClick?: () => void }) => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Dashboard link handler for desktop
+  const handleDashboardClick = async () => {
+    try {
+      const sessionCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("session="))
+        ?.split("=")[1];
+      if (!sessionCookie) {
+        if (typeof window !== "undefined") {
+          const { toast } = await import("react-toastify");
+          toast.error("You are not signed in. Please log in first.");
+        }
+        return;
+      }
+      const res = await getRoleFromSessionCookie(sessionCookie);
+      if (res.ok && res.role) {
+        if (res.role === "user") {
+          router.push("/pages/user/dashboard");
+        } else if (res.role === "organisation") {
+          router.push("/pages/organisation/dashboard");
+        } else {
+          if (typeof window !== "undefined") {
+            const { toast } = await import("react-toastify");
+            toast.error("Unknown role. Cannot redirect to dashboard.");
+          }
+        }
+      } else {
+        if (typeof window !== "undefined") {
+          const { toast } = await import("react-toastify");
+          toast.error(res.message || "Unable to determine role. Please log in.");
+        }
+      }
+    } catch (err: any) {
+      if (typeof window !== "undefined") {
+        const { toast } = await import("react-toastify");
+        toast.error(err?.message || "Unable to determine role. Please log in.");
+      }
+    }
+  };
+
   const filteredLinks = hasAuth
     ? NAV_LINKS.filter((l) => l.label !== "Login" && l.label !== "Sign Up")
-    : NAV_LINKS;
+    : NAV_LINKS.filter((l) => l.label !== "Dashboard" && l.label !== "Login" && l.label !== "Sign Up");
 
   const handleLogout = () => {
     if (onLogoutClick) onLogoutClick();
@@ -170,6 +208,15 @@ const Navbar = ({ onLogoutClick }: { onLogoutClick?: () => void }) => {
                 )
               )
             )}
+            {hasAuth &&
+              <button
+                type="button"
+                className="text-base font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                onClick={handleDashboardClick}
+              >
+                Dashboard
+              </button>
+            }
             {hasAuth && (
               <button
                 onClick={handleLogout}
@@ -183,41 +230,21 @@ const Navbar = ({ onLogoutClick }: { onLogoutClick?: () => void }) => {
           <button
             className="md:hidden flex flex-col gap-1.5 p-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300"
             aria-label="Open menu"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => {
+              if (onSideMenuToggle) onSideMenuToggle();
+            }}
           >
             <span
-              className={`block h-0.5 w-6 bg-blue-700 rounded transition-all duration-200 ${
-                open ? "rotate-45 translate-y-2" : ""
-              }`}
+              className={`block h-0.5 w-6 bg-blue-700 rounded transition-all duration-200`}
             ></span>
             <span
-              className={`block h-0.5 w-6 bg-blue-700 rounded transition-all duration-200 ${
-                open ? "opacity-0" : ""
-              }`}
+              className={`block h-0.5 w-6 bg-blue-700 rounded transition-all duration-200`}
             ></span>
             <span
-              className={`block h-0.5 w-6 bg-blue-700 rounded transition-all duration-200 ${
-                open ? "-rotate-45 -translate-y-2" : ""
-              }`}
+              className={`block h-0.5 w-6 bg-blue-700 rounded transition-all duration-200`}
             ></span>
           </button>
         </div>
-        <AnimatePresence>
-          {open && (
-            <>
-              {/* Overlay for mobile menu */}
-              <motion.div
-                className="fixed inset-0 bg-black/30 z-40 md:hidden"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setOpen(false)}
-              />
-              {/* Mobile Menu */}
-              <SideMenu open={open} setOpen={setOpen} hasAuth={hasAuth} />
-            </>
-          )}
-        </AnimatePresence>
       </nav>
     </>
   );
