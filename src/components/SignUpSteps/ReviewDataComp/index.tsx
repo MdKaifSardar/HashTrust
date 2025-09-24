@@ -95,7 +95,9 @@ const ReviewDataComp: React.FC = () => {
         JSON.stringify(userData.address || {}),
         userData.dob || "",
         previewUrl,
-        verificationStatus
+        verificationStatus,
+        "user",
+        userData.idNumber || "" // pass Aadhaar number
       );
       setShowModal(false);
       if (result.sessionCookie) {
@@ -170,6 +172,14 @@ const ReviewDataComp: React.FC = () => {
                     <span className={labelClass}>Phone:</span>
                     <span className={valueClass}>
                       {userData.phone || (
+                        <span className="text-red-500">Not available</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className={labelClass}>Aadhaar Number:</span>
+                    <span className={valueClass}>
+                      {userData.idNumber || (
                         <span className="text-red-500">Not available</span>
                       )}
                     </span>

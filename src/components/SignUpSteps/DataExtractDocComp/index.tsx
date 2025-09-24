@@ -176,6 +176,10 @@ const DataExtractDocComp: React.FC = () => {
                     <span className="font-semibold text-gray-700">Phone Number:</span>
                     <span className="text-gray-800">{userData.phone}</span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-700">Aadhaar Number:</span>
+                    <span className="text-gray-800">{userData.idNumber}</span>
+                  </div>
                   <div className="flex flex-col gap-1">
                     <span className="font-semibold text-gray-700 mb-1">Address:</span>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">

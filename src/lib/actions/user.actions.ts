@@ -90,7 +90,8 @@ export async function createUser(
     faceLiveness?: { status: string; score: number | null };
     faceSimilarity?: { status: string; score: number | null };
   },
-  role = "user"
+  role = "user",
+  idNumber?: string // Aadhaar number
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
   try {
     // ✅ Convert base64 to File
@@ -115,6 +116,22 @@ export async function createUser(
       if (err?.code === "auth/email-already-in-use") {
         // Efficient Firestore query for user document with same email and role
         const firestoreDb = getFirestore(firebaseApp);
+
+        // Check for duplicate Aadhaar number before creating user
+        if (idNumber) {
+          const aadhaarQuery = query(
+            collection(firestoreDb, "users"),
+            where("idNumber", "==", idNumber)
+          );
+          const aadhaarSnap = await getDocs(aadhaarQuery);
+          if (!aadhaarSnap.empty) {
+            return {
+              ok: false,
+              message: "A user with this Aadhaar number already exists.",
+            };
+          }
+        }
+
         const userQuery = query(
           collection(firestoreDb, "users"),
           where("emailAddress", "==", emailAddress),
@@ -239,6 +256,7 @@ export async function createUser(
 
         // Step 7: Save user data in Firestore (use Firebase UID for hash)
         const db = getFirestore(firebaseApp);
+        // Step 8: Generate hash of user data (include idNumber)
         const userDataHash = generateUserDataHash({
           uid: firebaseUser.uid,
           name,
@@ -256,7 +274,9 @@ export async function createUser(
               : null,
           verificationStatus: verificationStatus || null,
           createdAt: new Date().toISOString(),
+          idNumber: idNumber || null, // include Aadhaar in hash
         });
+
         const userDoc = {
           uid: firebaseUser.uid,
           name,
@@ -276,6 +296,7 @@ export async function createUser(
           createdAt: new Date().toISOString(),
           hash: userDataHash,
           role,
+          idNumber: idNumber || null, // save Aadhaar in user doc
         };
 
         try {
@@ -319,6 +340,22 @@ export async function createUser(
       };
     }
     const firebaseUser: FirebaseUser = userCredential.user;
+
+    // Check for duplicate Aadhaar number before creating user
+    const firestoreDb = getFirestore(firebaseApp);
+    if (idNumber) {
+      const aadhaarQuery = query(
+        collection(firestoreDb, "users"),
+        where("idNumber", "==", idNumber)
+      );
+      const aadhaarSnap = await getDocs(aadhaarQuery);
+      if (!aadhaarSnap.empty) {
+        return {
+          ok: false,
+          message: "A user with this Aadhaar number already exists.",
+        };
+      }
+    }
 
     // Step 2: Prepare files for Cloudinary
     const userImageFileObj =
@@ -420,7 +457,7 @@ export async function createUser(
 
     // Step 7: Save user data in Firestore
     const db = getFirestore(firebaseApp);
-    // Step 8: Generate hash of user data
+    // Step 8: Generate hash of user data (include idNumber)
     const userDataHash = generateUserDataHash({
       uid: firebaseUser.uid,
       name,
@@ -438,6 +475,7 @@ export async function createUser(
           : null,
       verificationStatus: verificationStatus || null,
       createdAt: new Date().toISOString(),
+      idNumber: idNumber || null, // include Aadhaar in hash
     });
 
     const userDoc = {
@@ -455,10 +493,11 @@ export async function createUser(
         identityDocumentUrl && identityDocumentPublicId
           ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
           : null,
-      verificationStatus: verificationStatus || null, // <-- save verification status object
+      verificationStatus: verificationStatus || null,
       createdAt: new Date().toISOString(),
       hash: userDataHash, // <-- save the hash in the user document
       role, // <-- save role
+      idNumber: idNumber || null, // save Aadhaar in user doc
     };
 
     try {

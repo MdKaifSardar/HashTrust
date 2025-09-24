@@ -11,16 +11,17 @@ export interface UserDataState {
   name: string | null;
   dob: string | null;
   phone: string | null;
-  email?: string | null; // <-- add this
+  email?: string | null;
   address: UserAddress;
   password?: string | null;
+  idNumber?: string | null; // Aadhaar number
 }
 
 const initialState: UserDataState = {
   name: null,
   dob: null,
   phone: null,
-  email: null, // <-- add this
+  email: null,
   address: {
     po: null,
     district: null,
@@ -28,6 +29,7 @@ const initialState: UserDataState = {
     pin: null,
   },
   password: null,
+  idNumber: null,
 };
 
 const userDataSlice = createSlice({
@@ -42,7 +44,7 @@ const userDataSlice = createSlice({
       state.name = null;
       state.dob = null;
       state.phone = null;
-      state.email = null; // <-- reset this
+      state.email = null;
       state.address = {
         po: null,
         district: null,
@@ -50,6 +52,7 @@ const userDataSlice = createSlice({
         pin: null,
       };
       state.password = null;
+      state.idNumber = null;
     },
   },
 });

@@ -21,6 +21,7 @@ interface ExtractedData {
     state: string | null;
     pin: string | null;
   };
+  idNumber?: string | null; // Aadhaar number
 }
 
 export async function extractUserDataWithGemini(
@@ -39,10 +40,12 @@ export async function extractUserDataWithGemini(
   const imageBase64: string = await fileToBase64(file);
 
   const prompt: string = `
-    Extract the following fields from the provided identity document image:
+    The provided document is an Aadhaar card (Indian national identity card).
+    Extract the following fields from the image:
     - Name
     - Date of Birth
     - Phone Number
+    - Aadhaar Number (12-digit ID number, sometimes called UID, usually printed in large font)
     - Address (with the following subfields: PO (Post Office), District, State, Pin Code)
 
     Respond in JSON format:
@@ -50,6 +53,7 @@ export async function extractUserDataWithGemini(
       "name": "...",
       "dob": "...",
       "phone": "...",
+      "idNumber": "...",
       "address": {
         "po": "...",
         "district": "...",
@@ -88,6 +92,7 @@ export async function extractUserDataWithGemini(
     name: null,
     dob: null,
     phone: null,
+    idNumber: null,
     address: {
       po: null,
       district: null,
@@ -109,6 +114,7 @@ export async function extractUserDataWithGemini(
       name: parsed.name ?? null,
       dob: parsed.dob ?? null,
       phone: parsed.phone ?? null,
+      idNumber: parsed.idNumber ?? null,
       address: {
         po: parsed.address?.po ?? null,
         district: parsed.address?.district ?? null,
@@ -125,6 +131,7 @@ export async function extractUserDataWithGemini(
     !extracted.name ||
     !extracted.dob ||
     !extracted.phone ||
+    !extracted.idNumber ||
     !extracted.address.po ||
     !extracted.address.district ||
     !extracted.address.state ||

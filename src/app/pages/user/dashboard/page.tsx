@@ -132,6 +132,14 @@ const DashboardPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+                <div>
+                  <div className="text-gray-500 text-sm">Aadhaar Number</div>
+                  <div className="font-medium text-gray-800">
+                    {user.idNumber || (
+                      <span className="text-red-500">Not available</span>
+                    )}
+                  </div>
+                </div>
                 <div className="md:col-span-2">
                   <div className="text-gray-500 text-sm">Address</div>
                   <div className="font-medium text-gray-800">

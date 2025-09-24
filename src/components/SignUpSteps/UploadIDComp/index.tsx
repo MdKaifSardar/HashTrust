@@ -24,6 +24,8 @@ import { toast } from "react-toastify";
 import { useExtractFaceFromDoc } from "../../../utils/hooks/ExtractFaceFromDoc";
 import Loader from "../../Loader";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { resetUserData } from "../../../redux/features/userData/userDataSlice";
+import { resetFaceSimilarityCheck } from "../../../redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
 
 const UploadIDComp: React.FC = () => {
   const dispatch = useDispatch();
@@ -71,18 +73,21 @@ const UploadIDComp: React.FC = () => {
     if (selected) {
       if (selected.type === "image/jpeg" || selected.type === "image/jpg") {
         dispatch(setIdentityDocumentFile(selected));
+        dispatch(resetUserData()); // <-- Reset user data on new file upload
         // All states (face image, error, etc.) will be reset by useEffect above
       } else {
         dispatch(setPreviewUrl(undefined));
         dispatch(setIdentityDocumentFile(undefined));
         dispatch(setFaceImage(undefined));
         dispatch(setExtractError("Only JPEG image files are allowed."));
+        dispatch(resetUserData()); // <-- Also reset user data if invalid file
       }
     } else {
       dispatch(setPreviewUrl(undefined));
       dispatch(setIdentityDocumentFile(undefined));
       dispatch(setFaceImage(undefined));
       dispatch(setExtractError(null));
+      dispatch(resetUserData()); // <-- Also reset user data if no file
     }
   };
 
@@ -106,6 +111,7 @@ const UploadIDComp: React.FC = () => {
     if (result.message) toast.success(result.message);
     if (result.faceUrl) {
       dispatch(setFaceImage(result.faceUrl));
+      dispatch(resetFaceSimilarityCheck()); // <-- Reset similarity check when new face extracted
     }
     dispatch(setExtracting(false));
   };
