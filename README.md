@@ -31,17 +31,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.app/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-# BlockID: Decentralized Identity Protection & Fraud Detection
+# HashTrust: Decentralized Identity Protection & Fraud Detection
 
-![BlockID Banner](https://user-images.githubusercontent.com/your-banner-image.png)
+![HashTrust Banner](https://user-images.githubusercontent.com/your-banner-image.png)
 
 ## 🚀 Overview
 
-**BlockID** is a next-generation identity protection platform designed to safeguard users and organisations from identity theft and fraud. By leveraging decentralized blockchain storage and advanced GenAI-powered fraud detection, BlockID ensures your personal and organisational data remains secure, private, and tamper-proof.
+**HashTrust** is a next-generation identity protection platform designed to safeguard users and organisations from identity theft and fraud. By leveraging decentralized blockchain storage and advanced GenAI-powered fraud detection, HashTrust ensures your personal and organisational data remains secure, private, and tamper-proof.
 
 ---
 
@@ -67,7 +67,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ---
 
-## 🛡️ Why BlockID?
+## 🛡️ Why HashTrust?
 
 - **Protect Against Identity Theft:**  
   Your identity data is never stored in plain text. Blockchain hashing ensures only you control your information.
@@ -98,8 +98,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/blockid.git
-cd blockid
+git clone https://github.com/your-org/hashtrust.git
+cd hashtrust
 ```
 
 ### 2. Install Dependencies
@@ -110,14 +110,32 @@ npm install
 
 ### 3. Configure Environment Variables
 
-Create a `.env.local` file and add your Firebase, Cloudinary, and blockchain credentials.
+Create a `.env.local` file and add your Firebase, Cloudinary, and blockchain credentials.  
+**Format example (see `.env` in repo):**
 
 ```env
 FIREBASE_API_KEY=your-key
 FIREBASE_AUTH_DOMAIN=your-domain
-...
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
-...
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_STORAGE_BUCKET=your-storage-bucket
+FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+FIREBASE_APP_ID=your-app-id
+FIREBASE_MEASUREMENT_ID=your-measurement-id
+NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-key
+CLARIFAI_PAT=your-clarifai-pat
+CLOUDINARY_URL=your-cloudinary-url
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
+CLOUD_NAME=your-cloudinary-cloud-name
+FACEPP_API_KEY=your-facepp-key
+FACEPP_API_SECRET=your-facepp-secret
+FIREBASE_CLIENT_EMAIL=your-firebase-client-email
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+NEXT_PUBLIC_RPC_URL=your-rpc-url
+PRIVATE_KEY=your-private-key
+CONTRACT_ADDRESS=your-contract-address
 ```
 
 ### 4. Run the Development Server
@@ -126,17 +144,81 @@ NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
 npm run dev
 ```
 
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
 ---
 
 ## 🔑 API Endpoints
 
+### Live API Base URL
+
+**Production:**  
+`https://hash-trust.vercel.app/`
+
+**Local:**  
+`http://localhost:3000/`
+
 ### Authentication
 
-- `POST /api/login`  
-  Authenticate user or organisation.
+#### `POST /api/login`
+
+Authenticate user or organisation using email, password, and API key.
+
+**Live Endpoint:**  
+`https://hash-trust.vercel.app/api/login`
+
+**Request Body:**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "yourpassword",
+  "apiKey": "your-organisation-api-key"
+}
+```
+
+**Response:**
+
+- **Success (HTTP 200):**
+  ```json
+  {
+    "ok": true,
+    "message": "Login successful"
+  }
+  ```
+  - A session cookie is set in the response headers (`Set-Cookie: session=...`).
+
+- **Failure (HTTP 401/400):**
+  ```json
+  {
+    "ok": false,
+    "error": "Invalid API Key." // or other error message
+    "message": "Login failed."
+  }
+  ```
+
+- **Error (HTTP 500):**
+  ```json
+  {
+    "ok": false,
+    "error": "Internal server error.",
+    "message": "Internal server error."
+  }
+  ```
+
+**Usage Instructions:**
+
+- You must provide a valid API key (created via organisation dashboard).
+- The API key must belong to the organisation.
+- On successful login, a session cookie is set for authentication.
+- Use the session cookie for subsequent authenticated requests.
+
+---
+
+### Other API Endpoints
 
 - `POST /api/fetch-user-data`  
-  Fetch user data using API key and token.
+  Fetch user data using API key and session cookie.
 
 - `POST /api/org-signup`  
   Organisation registration (sets session cookie).
@@ -144,15 +226,11 @@ npm run dev
 - `POST /api/org-login`  
   Organisation login (sets session cookie).
 
-### API Key Management
-
 - `POST /api/create-api-key`  
   Create a new API key for your organisation.
 
 - `POST /api/delete-api-key`  
   Delete an existing API key.
-
-### Usage & Logs
 
 - `GET /api/org-session`  
   Verify organisation session and fetch details.
@@ -200,17 +278,15 @@ Please open issues, submit pull requests, or suggest new features.
 
 ## 📄 License
 
-MIT License © 2024 BlockID Team
+MIT License © 2024 HashTrust Team
 
 ---
 
 ## ✨ Connect With Us
 
-- [Website](https://blockid.example.com)
-- [Twitter](https://twitter.com/blockid)
-- [LinkedIn](https://linkedin.com/company/blockid)
-- [Contact](mailto:support@blockid.example.com)
+- [Website](https://hash-trust.vercel.app/)
+- [Contact](mailto:support@hash-trust.vercel.app)
 
 ---
 
-> **BlockID**: Your identity, secured for the future.
+> **HashTrust**: Your identity, secured for the future.
