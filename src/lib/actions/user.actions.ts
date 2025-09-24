@@ -114,6 +114,7 @@ export async function createUser(
   idNumber?: string // Aadhaar number
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
   try {
+    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
     // ✅ Convert base64 to File
     const base64ToFile = (base64: string, filename: string): File => {
       const arr = base64.split(",");
@@ -712,6 +713,7 @@ export async function authenticateUserWithSessionCookie(
   sessionCookie: string
 ): Promise<{ ok: boolean; user?: any; message?: string }> {
   try {
+    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
     }
@@ -779,6 +781,7 @@ export async function getRoleFromSessionCookie(
   sessionCookie: string
 ): Promise<{ ok: boolean; role?: string; message?: string }> {
   try {
+    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
     if (typeof window !== "undefined") {
       throw new Error("This function must be called from the server.");
     }

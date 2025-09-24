@@ -48,6 +48,7 @@ export async function createOrganisation({
   role?: string;
 }): Promise<{ ok: boolean; message: string; sessionCookie?: string }> {
   try {
+    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
     if (!orgName || !email || !password || !contactPerson) {
       return { ok: false, message: "All fields are required." };
     }
@@ -149,6 +150,7 @@ export async function loginOrganisation({
   role?: string;
 }): Promise<{ ok: boolean; message: string; sessionCookie?: string }> {
   try {
+    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
     if (!email || !password) {
       return { ok: false, message: "Email and password are required." };
     }
@@ -224,9 +226,7 @@ export async function authenticateOrgWithSessionCookie(
   sessionCookie: string
 ): Promise<{ ok: boolean; organisation?: any; message?: string }> {
   try {
-    if (typeof window !== "undefined") {
-      throw new Error("This function must be called from the server.");
-    }
+    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
     const adminApp = getOrInitAdminApp();
     if (!adminApp) {
       return { ok: false, message: "Admin SDK not initialized. Server-side operation required." };
