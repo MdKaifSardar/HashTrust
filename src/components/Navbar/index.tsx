@@ -106,7 +106,7 @@ const Navbar = ({ onLogoutClick, onSideMenuToggle }: { onLogoutClick?: () => voi
             href="/"
             className="text-2xl font-extrabold text-blue-700 tracking-tight font-sans"
           >
-            BlockID
+            HashTrust
           </Link>
           {/* Desktop Nav */}
           <div className="hidden md:flex gap-4 md:gap-8 items-center">

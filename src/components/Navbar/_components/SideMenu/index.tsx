@@ -118,6 +118,16 @@ const SideMenu = ({
     }
   };
 
+  const handleSectionScroll = (sectionId: string) => {
+    if (typeof window !== "undefined") {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        setOpen(false);
+      }
+    }
+  };
+
   return (
     <motion.div
       ref={menuRef}
@@ -138,7 +148,16 @@ const SideMenu = ({
       </button>
       {/* Render all links except User/Org Sign Up and Login as dropdowns */}
       {filteredLinks.map((link) =>
-        link.label === "Sign Up" && !hasAuth ? (
+        (link.label === "Services" || link.label === "Features") ? (
+          <button
+            key={link.label}
+            type="button"
+            className="text-lg font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300 w-full text-left"
+            onClick={() => handleSectionScroll(link.label.toLowerCase())}
+          >
+            {link.label}
+          </button>
+        ) : link.label === "Sign Up" && !hasAuth ? (
           <div
             key="SignUpDropdown"
             ref={signupRef}

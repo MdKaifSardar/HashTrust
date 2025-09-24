@@ -1,8 +1,26 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { FiArrowLeft } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { selectCurrentStep } from "@/redux/features/signUpSteps/stepSlice";
+
+// Custom tailless arrow icon
+const TaillessArrowLeft = () => (
+  <svg
+    width={24}
+    height={24}
+    stroke="currentColor"
+    fill="none"
+    strokeWidth={2}
+    viewBox="0 0 24 24"
+    className="inline-block"
+  >
+    <path
+      d="M15 5l-7 7 7 7"
+      strokeLinecap="butt"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 const steps = [
   { label: "ID Document" },
@@ -27,11 +45,13 @@ const MobileTopProgressBar: React.FC = () => {
     <div className="sm:hidden w-full flex flex-col items-center pt-6 pb-2 bg-blue-50 border-b border-blue-100 overflow-x-hidden">
       <Link
         href="/"
-        className="mb-4 flex items-center gap-2 text-blue-700 hover:text-cyan-500 font-semibold text-base group relative"
+        className="mb-4 flex items-center gap-2 font-semibold text-base group relative transition-all duration-150 active:scale-95 px-4 py-2 rounded-full bg-blue-900 text-white shadow hover:bg-blue-800"
+        style={{ userSelect: "none" }}
       >
-        <span className="text-xl">
-          <FiArrowLeft />
+        <span className="text-xl text-white">
+          <TaillessArrowLeft />
         </span>
+        <span className="text-white">Back to Home</span>
       </Link>
       {/* Responsive progress bar */}
       <div className="w-full flex items-center justify-center px-2 overflow-x-auto">

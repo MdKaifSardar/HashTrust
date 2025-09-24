@@ -9,8 +9,12 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full relative overflow-x-hidden bg-home-gradient">
       <HeroSectionComponent />
-      <ServicesComponent />
-      <UniqueFeaturesComp />
+      <div id="services">
+        <ServicesComponent />
+      </div>
+      <div id="features">
+        <UniqueFeaturesComp />
+      </div>
     </div>
   );
 }

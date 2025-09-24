@@ -5,6 +5,7 @@ import LogoutModal from "@/components/Navbar/_components/LogoutModal";
 import SideMenu from "@/components/Navbar/_components/SideMenu";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
+import Footer from "@/components/Footer";
 
 export default function LayoutComponent({
   children,
@@ -83,6 +84,8 @@ export default function LayoutComponent({
         )}
       </AnimatePresence>
       <main className={isAuthPage ? "pt-0" : "pt-[3.5rem]"}>{children}</main>
+      {/* Show footer only if navbar is shown */}
+      {!isAuthPage ? <Footer /> : null}
       {showLogoutModal && (
         <LogoutModal
           onConfirm={handleLogout}
