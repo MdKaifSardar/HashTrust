@@ -10,7 +10,6 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { getFirestore, collection, addDoc, query, where, getDocs } from "firebase/firestore";
-import { getAuth as getAdminAuth } from "firebase-admin/auth";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import { getContract } from "@/utils/contract";
 import { generateUserDataHash } from "@/utils/generateDataHash";
@@ -26,9 +25,7 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID!,
   measurementId: process.env.FIREBASE_MEASUREMENT_ID!,
 };
-
 const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
 
 export interface UserImageCloudinary {
   url: string;
@@ -44,11 +41,27 @@ export interface User {
   dateOfBirth?: string;
   identityDocument?: UserImageCloudinary | null;
 }
-
 export interface CreateUserResult {
   user: User | null;
   idToken: string | null;
   error: string | null;
+}
+
+let adminInitialized = false;
+
+function getOrInitAdminApp() {
+  if (typeof window !== "undefined") return; // Never run admin SDK on client
+  if (!adminInitialized && !admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      }),
+    });
+    adminInitialized = true;
+  }
+  return admin;
 }
 
 // Modified Cloudinary upload to extract public_id
@@ -94,6 +107,7 @@ export async function createUser(
   idNumber?: string // Aadhaar number
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
   try {
+    const auth = getAuth(firebaseApp);
     // ✅ Convert base64 to File
     const base64ToFile = (base64: string, filename: string): File => {
       const arr = base64.split(",");
@@ -551,29 +565,13 @@ export async function createUser(
   }
 }
 
-let adminInitialized = false;
-
-function getOrInitAdminApp() {
-  if (typeof window !== "undefined") return; // Never run admin SDK on client
-  if (!adminInitialized && !admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      }),
-    });
-    adminInitialized = true;
-  }
-  return admin;
-}
-
 export async function loginUser(
   email: string,
   password: string,
   role = "user"
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
   try {
+    const auth = getAuth(firebaseApp);
     // 1. Find user in Firestore by email and role
     const adminDb = getAdminFirestore();
     const userSnap = await adminDb.collection("users")

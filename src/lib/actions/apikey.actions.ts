@@ -31,7 +31,10 @@ export async function createApiKeyForOrg({
     const adminDb = getFirestore();
 
     // Verify the session cookie and get the user's UID
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedToken = await adminAuth.verifySessionCookie(
+      sessionCookie,
+      true
+    );
     const uid = organisationUid || decodedToken.uid;
 
     // Find organisation document by UID
