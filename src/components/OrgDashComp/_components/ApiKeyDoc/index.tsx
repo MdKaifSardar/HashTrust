@@ -39,7 +39,7 @@ const ApiKeyDoc: React.FC = () => (
     </p>
     <h3 className="text-lg font-semibold text-blue-700 mb-2">Login Endpoint</h3>
     <p className="mb-2 text-gray-700 text-xs sm:text-sm">
-      <strong>Endpoint:</strong> <code className="bg-gray-100 px-2 py-1 rounded">POST /api/login</code>
+      <strong>Endpoint:</strong> <code className="bg-gray-100 px-2 py-1 rounded">POST /api/v1/login/user</code>
     </p>
     <p className="mb-2 text-gray-700 text-xs sm:text-sm">
       <strong>Required JSON body:</strong>
@@ -54,7 +54,6 @@ const ApiKeyDoc: React.FC = () => (
       <strong>Response (success):</strong>
       <CodeBlock code={`{
   "ok": true,
-  "idToken": "...",
   "message": "Login successful"
 }`} />
     </p>

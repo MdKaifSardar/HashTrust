@@ -160,12 +160,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Authentication
 
-#### `POST /api/login`
+#### `POST /api/v1/login/user`
 
-Authenticate user or organisation using email, password, and API key.
+Authenticate user using email, password, and API key.
 
 **Live Endpoint:**  
-`https://hash-trust.vercel.app/api/login`
+`https://hash-trust.vercel.app/api/v1/login/user`
 
 **Request Body:**
 
@@ -173,7 +173,8 @@ Authenticate user or organisation using email, password, and API key.
 {
   "email": "user@example.com",
   "password": "yourpassword",
-  "apiKey": "your-organisation-api-key"
+  "apiKey": "your-organisation-api-key",
+  "type": "login"
 }
 ```
 

@@ -13,14 +13,40 @@ export async function POST(req: NextRequest) {
     const { email, password } = reqBody;
 
     if (!email || !password) {
+      // Record usage for missing email or password
+      await recordApiKeyUsage(
+        apiKey,
+        type,
+        reqBody,
+        { ok: false, error: "Email and password are required." },
+        false,
+        400
+      );
       return NextResponse.json({ ok: false, error: "Email and password are required." }, { status: 400 });
     }
     if (!apiKey) {
+      // Record usage for missing API key
+      await recordApiKeyUsage(
+        apiKey,
+        type,
+        reqBody,
+        { ok: false, error: "API Key is required." },
+        false,
+        400
+      );
       return NextResponse.json({ ok: false, error: "API Key is required." }, { status: 400 });
     }
     const apiKeyRes = await verifyApiKey(apiKey);
 
     if (!apiKeyRes.ok) {
+      await recordApiKeyUsage(
+        apiKey,
+        type,
+        reqBody,
+        { ok: false, error: apiKeyRes.message || "Invalid API Key." },
+        false,
+        401
+      );
       return NextResponse.json({ ok: false, error: apiKeyRes.message || "Invalid API Key." }, { status: 401 });
     }
 
