@@ -56,6 +56,9 @@ export default function LayoutComponent({
   };
 
   const isAuthPage = pathname?.includes("/auth");
+  const isDashboardPage =
+    pathname?.startsWith("/pages/user/dashboard") ||
+    pathname?.startsWith("/pages/organisation/dashboard");
 
   return (
     <>
@@ -84,8 +87,8 @@ export default function LayoutComponent({
         )}
       </AnimatePresence>
       <main className={isAuthPage ? "pt-0" : "pt-[3.5rem]"}>{children}</main>
-      {/* Show footer only if navbar is shown */}
-      {!isAuthPage ? <Footer /> : null}
+      {/* Show footer only if navbar is shown and not on dashboard pages */}
+      {!isAuthPage && !isDashboardPage ? <Footer /> : null}
       {showLogoutModal && (
         <LogoutModal
           onConfirm={handleLogout}
