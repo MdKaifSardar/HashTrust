@@ -1,144 +1,275 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HashTrust: Decentralized Identity Verification & Fraud Prevention Platform
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-15.3.5-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Ethereum](https://img.shields.io/badge/Ethereum-Sepolia-3C3C3D?style=for-the-badge&logo=ethereum)](https://ethereum.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-Admin%20%26%20Firestore-FFA611?style=for-the-badge&logo=firebase)](https://firebase.google.com/)
+[![Gemini](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 📌 Executive Summary
+
+**HashTrust** is an enterprise-grade, decentralized Identity Verification (KYC) and Anti-Fraud platform. It bridges artificial intelligence with decentralized ledger technology (DLT) to eliminate identity theft, document tampering, and biometric spoofing.
+
+Sensitive identity records are never exposed in plain text on public ledgers. Instead, personal data is cryptographically hashed using **SHA-256** and anchored to the **Ethereum (Sepolia) blockchain** via an immutable smart contract. Verified users receive tamper-proof digital credentials, while registered enterprise organizations can authenticate and verify users programmatically via secure B2B API keys.
+
+---
+
+## 🏗️ System Architecture
+
+The following diagram illustrates how user requests, AI inference engines, storage layers, and the blockchain ledger interact within HashTrust:
+
+```mermaid
+graph TD
+    subgraph Client["Client Tier"]
+        U["End User (KYC Applicant)"]
+        ORG["Enterprise Organization"]
+    end
+
+    subgraph AppServer["Application Tier (Next.js 15 Fullstack)"]
+        UI["React 19 & Tailwind UI / Redux Store"]
+        SA["Server Actions & API Routes (/api/v1)"]
+        AUTH["Session & API Key Validator (Firebase Admin)"]
+    end
+
+    subgraph AIEngines["Multi-Modal AI Pipeline"]
+        GEMINI["Google Gemini 2.5 Flash\n(Document OCR & Field Extraction)"]
+        CLARIFAI["Clarifai Anti-Spoofing\n(Silent Face Liveness Detection)"]
+        FACEPP["Face++ Biometric API\n(1:1 Facial Similarity Matching)"]
+    end
+
+    subgraph StorageLedger["Persistence & Ledger Tier"]
+        CLOUDINARY[("Cloudinary\n(Encrypted Media Storage)")]
+        FIRESTORE[("Firebase Firestore\n(User Data & Audit Logs)")]
+        SEPOLIA[("Ethereum Sepolia Testnet\n(HashStorage Smart Contract)")]
+    end
+
+    U -->|Uploads Document & Captures Selfie| UI
+    ORG -->|API Requests with API Key| SA
+
+    UI --> SA
+    SA --> AUTH
+
+    SA -->|Extract text from Aadhaar ID| GEMINI
+    SA -->|Verify selfie liveness| CLARIFAI
+    SA -->|Compare ID photo vs Selfie| FACEPP
+
+    SA -->|Upload sanitized media| CLOUDINARY
+    SA -->|Store profile & session| FIRESTORE
+    SA -->|Commit SHA-256 hash| SEPOLIA
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.app/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-# HashTrust: Decentralized Identity Protection & Fraud Detection
-
-![HashTrust Banner](https://user-images.githubusercontent.com/your-banner-image.png)
-
-## 🚀 Overview
-
-**HashTrust** is a next-generation identity protection platform designed to safeguard users and organisations from identity theft and fraud. By leveraging decentralized blockchain storage and advanced GenAI-powered fraud detection, HashTrust ensures your personal and organisational data remains secure, private, and tamper-proof.
-
 ---
 
-## 🌟 Key Features
+## 🔄 Core Workflows
 
-- **Decentralized Data Storage:**  
-  All sensitive identity data is hashed and stored on the blockchain, ensuring immutability and privacy.
+### 1. Multi-Stage User KYC Onboarding Pipeline
 
-- **Advanced Fraud Detection (GenAI):**  
-  Utilizes generative AI models for real-time fraud analysis, face liveness checks, and similarity verification.
+The user verification journey uses a state-driven wizard managed by Redux Toolkit:
 
-- **API Key Management:**  
-  Secure, single-use API keys for organisations to access platform features and monitor usage.
+```mermaid
+flowchart LR
+    A["1. Upload ID\n(Aadhaar Card)"] --> B["2. Gemini OCR\n(Data Extraction)"]
+    B --> C["3. Live Selfie\n(Clarifai Anti-Spoof)"]
+    C --> D["4. Face++ Match\n(Similarity Check ≥ 70%)"]
+    D --> E["5. Set Credentials\n(Password Creation)"]
+    E --> F["6. Blockchain Anchor\n(SHA-256 Hash on Sepolia)"]
+    F --> G["7. Verified Identity\n(User Dashboard)"]
 
-- **Session-Based Authentication:**  
-  Robust authentication using secure session cookies, eliminating token expiry issues.
-
-- **Usage Analytics:**  
-  Visual dashboards for API usage, traffic, and request logs.
-
-- **Responsive UI:**  
-  Modern, mobile-friendly interface built with React, Next.js, and Tailwind CSS.
-
----
-
-## 🛡️ Why HashTrust?
-
-- **Protect Against Identity Theft:**  
-  Your identity data is never stored in plain text. Blockchain hashing ensures only you control your information.
-
-- **Fraud Prevention:**  
-  GenAI models detect suspicious activity, fake identities, and prevent fraudulent access.
-
-- **Transparency & Auditability:**  
-  Every API request and login is logged and available for review, giving you full control and visibility.
-
-- **Easy Integration:**  
-  RESTful API endpoints for login, data fetch, and more. Simple API key management for organisations.
-
----
-
-## 📦 Tech Stack
-
-- **Frontend:** React, Next.js, Tailwind CSS, Framer Motion
-- **Backend:** Firebase, Firestore, Firebase Admin SDK
-- **Blockchain:** Custom smart contract for hash verification
-- **AI/ML:** GenAI models for fraud detection and face verification
-- **Cloud Storage:** Cloudinary for secure image/document uploads
-
----
-
-## 📝 Getting Started
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-org/hashtrust.git
-cd hashtrust
+    style A fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style B fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style C fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style D fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style E fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style F fill:#0f766e,stroke:#14b8a6,stroke-width:2px,color:#fff
+    style G fill:#14532d,stroke:#22c55e,stroke-width:2px,color:#fff
 ```
 
-### 2. Install Dependencies
+1. **Document Upload**: User uploads an official identification card (e.g., Aadhaar card).
+2. **Gemini 2.5 Flash OCR**: Extracts Name, Date of Birth, Phone Number, ID Number, and Address fields in structured JSON format.
+3. **Anti-Spoofing Liveness Detection**: Clarifai inspects the live selfie to prevent presentation attacks (printed photos, screen replays, 3D masks).
+4. **Biometric Face Match**: Face++ compares the portrait extracted from the ID against the live selfie. Verification proceeds only if confidence exceeds the 70% threshold.
+5. **Credential Creation**: Generates account credentials and registers the identity profile.
+6. **Decentralized Hash Anchoring**: The system computes a canonical SHA-256 hash of the sanitized profile and executes `storeHash(hash)` on the `HashStorage` smart contract.
+
+---
+
+### 2. B2B Organisation Authentication Flow
+
+Third-party enterprise clients integrate with HashTrust to verify and authenticate users securely:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor OrgClient as Enterprise Client
+    participant API as HashTrust API (/api/v1/login/user)
+    participant Auth as Key & Session Validator
+    participant DB as Firebase Firestore
+    participant Chain as Sepolia Smart Contract
+
+    OrgClient->>API: POST /api/v1/login/user (email, password, apiKey)
+    API->>Auth: Verify apiKey against database
+    alt Invalid or Revoked API Key
+        Auth-->>API: Authentication Error
+        API-->>OrgClient: 401 Unauthorized (Invalid API Key)
+    else Valid API Key
+        Auth->>DB: Fetch user credentials
+        API->>DB: Log API request metadata & timestamp
+        API->>Chain: Verify identity integrity hash (verifyHash)
+        Chain-->>API: Returns boolean status (valid/tampered)
+        API-->>OrgClient: 200 OK + Set HttpOnly Session Cookie
+    end
+```
+
+---
+
+## 💎 Key Features
+
+| Capability | Technical Implementation | Benefit |
+| :--- | :--- | :--- |
+| **Tamper-Proof Ledger** | Ethereum Sepolia EVM + Ethers.js v6 | Identity records cannot be altered, spoofed, or deleted once hashed. |
+| **Multi-Modal AI Verification** | Gemini 2.5 Flash + Clarifai + Face++ | Eliminates manual document inspection and prevents identity fraud. |
+| **Enterprise API Management** | Dynamic API key provisioning with Firestore | Single-use/active API keys with granular deletion and audit logging. |
+| **Real-Time Analytics Dashboard** | Recharts + Server-side usage tracking | Visual inspection of API traffic, status codes, and request logs. |
+| **Enterprise Session Security** | Firebase Admin SDK + HttpOnly Cookies | Eliminates client-side JWT token leakage and Cross-Site Scripting (XSS) risks. |
+
+---
+
+## 📜 Smart Contract Specification
+
+The decentralized integrity layer uses **`HashStorage.sol`** deployed on Ethereum Sepolia.
+
+- **Contract Address:** `0xbb6eCa83e82eA3C252373DA5F5A113561c3b5e55`
+- **Network:** Ethereum Sepolia Testnet
+
+### Contract Interface
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract HashStorage {
+    mapping(string => bool) public storedHashes;
+    event HashStored(string hash);
+
+    function storeHash(string memory hash) public {
+        require(!storedHashes[hash], "Hash already exists");
+        storedHashes[hash] = true;
+        emit HashStored(hash);
+    }
+
+    function verifyHash(string memory hash) public view returns (bool) {
+        return storedHashes[hash];
+    }
+}
+```
+
+- **`storeHash(string hash)`**: Verifies non-existence, flags the hash as registered, and emits a `HashStored` event.
+- **`verifyHash(string hash)`**: Constant read operation returning whether a given SHA-256 data hash exists on-chain.
+
+---
+
+## 📁 Repository Structure
+
+```
+blockchain-verification/
+├── src/
+│   ├── app/                                # Next.js 15 App Router
+│   │   ├── api/v1/login/user/route.ts      # B2B User login & verification endpoint
+│   │   ├── pages/
+│   │   │   ├── auth/                       # User & Organisation login/signup
+│   │   │   ├── user/dashboard/             # Verified user profile & on-chain hash
+│   │   │   └── organisation/dashboard/     # B2B API key management & Recharts
+│   │   ├── layout.tsx                      # Root layout & providers
+│   │   └── page.tsx                        # Landing hero, features & services
+│   ├── components/                         # Modular React components
+│   │   ├── HomePage/                       # Hero section, feature showcases
+│   │   ├── OrgDashComp/                    # API keys, docs, analytics tabs
+│   │   └── SignUpSteps/                    # 6-Step interactive KYC wizard
+│   ├── lib/
+│   │   ├── actions/                        # Next.js Server Actions
+│   │   │   ├── apikey.actions.ts           # Key generation, revocation, and logging
+│   │   │   ├── dataExtract.actions.ts      # Gemini 2.5 Flash document parsing
+│   │   │   ├── faceSimilarity.actions.ts   # Face++ biometric comparison
+│   │   │   ├── livenessDetector.actions.ts # Clarifai silent anti-spoofing
+│   │   │   └── user.actions.ts             # User lifecycle & session handling
+│   │   └── database/                       # Firebase client & Admin SDK instances
+│   ├── redux/                              # Global state management
+│   │   ├── store.ts                        # Central Redux store
+│   │   └── features/                       # Slices (wizard steps, user data, image)
+│   └── utils/                              # Utilities & smart contracts
+│       ├── contract.ts                     # Ethers.js provider and contract instance
+│       ├── generateDataHash.ts             # Deterministic SHA-256 hash generator
+│       ├── uploadHash.ts                   # Blockchain write transactions
+│       └── contracts/HashStorage.json      # Hardhat contract compilation artifact
+├── public/                                 # Static assets & icons
+├── package.json                            # Dependencies & project scripts
+└── README.md                               # Project documentation
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- **Node.js**: v18.x or v20.x or higher
+- **npm** or **pnpm** or **yarn**
+- An Ethereum testnet wallet with Sepolia ETH (for gas fees)
+
+### 2. Installation
+
+Clone the repository and install dependencies:
 
 ```bash
+git clone https://github.com/MdKaifSardar/kyc-verify.git
+cd kyc-verify
 npm install
 ```
 
-### 3. Configure Environment Variables
+### 3. Environment Variables Configuration
 
-Create a `.env.local` file and add your Firebase, Cloudinary, and blockchain credentials.  
-**Format example (see `.env` in repo):**
+Create a `.env.local` file in the root directory:
 
 ```env
-FIREBASE_API_KEY=your-key
-FIREBASE_AUTH_DOMAIN=your-domain
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_STORAGE_BUCKET=your-storage-bucket
-FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-FIREBASE_APP_ID=your-app-id
-FIREBASE_MEASUREMENT_ID=your-measurement-id
-NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-key
-CLARIFAI_PAT=your-clarifai-pat
-CLOUDINARY_URL=your-cloudinary-url
-CLOUDINARY_API_KEY=your-cloudinary-api-key
-CLOUDINARY_API_SECRET=your-cloudinary-api-secret
-CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
-CLOUD_NAME=your-cloudinary-cloud-name
-FACEPP_API_KEY=your-facepp-key
-FACEPP_API_SECRET=your-facepp-secret
-FIREBASE_CLIENT_EMAIL=your-firebase-client-email
+# Firebase Client SDK
+FIREBASE_API_KEY=your_firebase_api_key
+FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+FIREBASE_APP_ID=your_app_id
+FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# Firebase Admin SDK (Server Actions)
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your_project.iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-NEXT_PUBLIC_RPC_URL=your-rpc-url
-PRIVATE_KEY=your-private-key
-CONTRACT_ADDRESS=your-contract-address
+
+# Google Gemini AI (Document OCR)
+NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+
+# Clarifai (Silent Face Anti-Spoofing Liveness)
+CLARIFAI_PAT=your_clarifai_pat
+
+# Face++ (Biometric Face Comparison)
+FACEPP_API_KEY=your_facepp_key
+FACEPP_API_SECRET=your_facepp_secret
+
+# Cloudinary (Secure Media Storage)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
+
+# Blockchain / Smart Contract (Ethereum Sepolia)
+NEXT_PUBLIC_RPC_URL=https://sepolia.infura.io/v3/your_infura_key
+PRIVATE_KEY=your_evm_wallet_private_key
+CONTRACT_ADDRESS=0xbb6eCa83e82eA3C252373DA5F5A113561c3b5e55
 ```
 
-### 4. Run the Development Server
+### 4. Running the Development Server
 
 ```bash
 npm run dev
@@ -146,59 +277,68 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### 5. Production Build
+
+To validate code compilation and generate an optimized build:
+
+```bash
+npm run build
+npm run start
+```
+
 ---
 
-## 🔑 API Endpoints
+## 📡 API Reference
 
-### Live API Base URL
-
-**Production:**  
-`https://hash-trust.vercel.app/`
-
-**Local:**  
-`http://localhost:3000/`
-
-### Authentication
+### User Authentication & Verification via Organisation Key
 
 #### `POST /api/v1/login/user`
 
-Authenticate user using email, password, and API key.
+Authenticates a verified user on behalf of an enterprise client using an active Organisation API Key.
 
-**Live Endpoint:**  
-`https://hash-trust.vercel.app/api/v1/login/user`
+**Headers:**
+```http
+Content-Type: application/json
+```
 
 **Request Body:**
-
 ```json
 {
   "email": "user@example.com",
-  "password": "yourpassword",
-  "apiKey": "your-organisation-api-key",
+  "password": "userPassword123",
+  "apiKey": "org_api_key_32_characters",
   "type": "login"
 }
 ```
 
-**Response:**
+**Responses:**
 
-- **Success (HTTP 200):**
+- **200 OK (Success):**
+  Sets a secure `HttpOnly; SameSite=Strict` session cookie for subsequent requests.
   ```json
   {
     "ok": true,
     "message": "Login successful"
   }
   ```
-  - A session cookie is set in the response headers (`Set-Cookie: session=...`).
 
-- **Failure (HTTP 401/400):**
+- **400 Bad Request:**
   ```json
   {
     "ok": false,
-    "error": "Invalid API Key." // or other error message
-    "message": "Login failed."
+    "error": "Email and password are required."
   }
   ```
 
-- **Error (HTTP 500):**
+- **401 Unauthorized:**
+  ```json
+  {
+    "ok": false,
+    "error": "Invalid API Key."
+  }
+  ```
+
+- **500 Internal Server Error:**
   ```json
   {
     "ok": false,
@@ -207,87 +347,17 @@ Authenticate user using email, password, and API key.
   }
   ```
 
-**Usage Instructions:**
-
-- You must provide a valid API key (created via organisation dashboard).
-- The API key must belong to the organisation.
-- On successful login, a session cookie is set for authentication.
-- Use the session cookie for subsequent authenticated requests.
-
 ---
 
-### Other API Endpoints
+## 🛡️ Security & Privacy Considerations
 
-- `POST /api/fetch-user-data`  
-  Fetch user data using API key and session cookie.
-
-- `POST /api/org-signup`  
-  Organisation registration (sets session cookie).
-
-- `POST /api/org-login`  
-  Organisation login (sets session cookie).
-
-- `POST /api/create-api-key`  
-  Create a new API key for your organisation.
-
-- `POST /api/delete-api-key`  
-  Delete an existing API key.
-
-- `GET /api/org-session`  
-  Verify organisation session and fetch details.
-
-- `GET /api/api-key-usage`  
-  Retrieve API key usage logs and analytics.
-
----
-
-## 📊 Dashboard Features
-
-- **Organisation Details:**  
-  View and manage your organisation profile.
-
-- **API Key Management:**  
-  Create, copy, and delete API keys securely.
-
-- **Usage Analytics:**  
-  Interactive charts for API traffic and request types.
-
-- **Request Logs:**  
-  Inspect detailed logs for every API request.
-
-- **API Documentation:**  
-  Built-in docs for all endpoints and request formats.
-
----
-
-## 🧠 AI-Powered Fraud Detection
-
-- **Face Liveness & Similarity:**  
-  GenAI models verify user images and detect spoofing.
-
-- **Real-Time Alerts:**  
-  Get notified of suspicious activity and failed login attempts.
-
----
-
-## 💡 Contributing
-
-We welcome contributions!  
-Please open issues, submit pull requests, or suggest new features.
+1. **Zero Raw PII on Blockchain**: Personal identifiable information (PII) is never written to the blockchain. Only a one-way deterministic SHA-256 hash is published, preventing identity exposure while maintaining proof of existence.
+2. **Anti-Spoofing & Liveness**: Live selfie capture eliminates photograph replay attacks through Clarifai's neural network.
+3. **Double Verification**: Biometric face matching against the official document guarantees that the applicant is the legitimate owner of the credential.
+4. **Strict Session Cookies**: Sessions use `HttpOnly`, `Secure`, and `SameSite=Strict` cookies, protecting credentials from script injection and man-in-the-middle attacks.
 
 ---
 
 ## 📄 License
 
-MIT License © 2024 HashTrust Team
-
----
-
-## ✨ Connect With Us
-
-- [Website](https://hash-trust.vercel.app/)
-- [Contact](mailto:support@hash-trust.vercel.app)
-
----
-
-> **HashTrust**: Your identity, secured for the future.
+This project is licensed under the [MIT License](LICENSE).
