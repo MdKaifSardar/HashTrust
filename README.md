@@ -23,7 +23,7 @@ Sensitive identity records are never exposed in plain text on public ledgers. In
 The following diagram illustrates how user requests, AI inference engines, storage layers, and the blockchain ledger interact within HashTrust:
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph Client["Client Tier"]
         U["End User (KYC Applicant)"]
         ORG["Enterprise Organization"]
@@ -31,20 +31,20 @@ graph TD
 
     subgraph AppServer["Application Tier (Next.js 15 Fullstack)"]
         UI["React 19 & Tailwind UI / Redux Store"]
-        SA["Server Actions & API Routes (/api/v1)"]
+        SA["Server Actions & API Routes"]
         AUTH["Session & API Key Validator (Firebase Admin)"]
     end
 
     subgraph AIEngines["Multi-Modal AI Pipeline"]
-        GEMINI["Google Gemini 2.5 Flash\n(Document OCR & Field Extraction)"]
-        CLARIFAI["Clarifai Anti-Spoofing\n(Silent Face Liveness Detection)"]
-        FACEPP["Face++ Biometric API\n(1:1 Facial Similarity Matching)"]
+        GEMINI["Google Gemini 2.5 Flash<br/>(Document OCR & Field Extraction)"]
+        CLARIFAI["Clarifai Anti-Spoofing<br/>(Silent Face Liveness Detection)"]
+        FACEPP["Face++ Biometric API<br/>(1:1 Facial Similarity Matching)"]
     end
 
     subgraph StorageLedger["Persistence & Ledger Tier"]
-        CLOUDINARY[("Cloudinary\n(Encrypted Media Storage)")]
-        FIRESTORE[("Firebase Firestore\n(User Data & Audit Logs)")]
-        SEPOLIA[("Ethereum Sepolia Testnet\n(HashStorage Smart Contract)")]
+        CLOUDINARY["Cloudinary<br/>(Encrypted Media Storage)"]
+        FIRESTORE["Firebase Firestore<br/>(User Data & Audit Logs)"]
+        SEPOLIA["Ethereum Sepolia Testnet<br/>(HashStorage Smart Contract)"]
     end
 
     U -->|Uploads Document & Captures Selfie| UI
@@ -72,12 +72,12 @@ The user verification journey uses a state-driven wizard managed by Redux Toolki
 
 ```mermaid
 flowchart LR
-    A["1. Upload ID\n(Aadhaar Card)"] --> B["2. Gemini OCR\n(Data Extraction)"]
-    B --> C["3. Live Selfie\n(Clarifai Anti-Spoof)"]
-    C --> D["4. Face++ Match\n(Similarity Check ≥ 70%)"]
-    D --> E["5. Set Credentials\n(Password Creation)"]
-    E --> F["6. Blockchain Anchor\n(SHA-256 Hash on Sepolia)"]
-    F --> G["7. Verified Identity\n(User Dashboard)"]
+    A["1. Upload ID<br/>(Aadhaar Card)"] --> B["2. Gemini OCR<br/>(Data Extraction)"]
+    B --> C["3. Live Selfie<br/>(Clarifai Anti-Spoof)"]
+    C --> D["4. Face Match<br/>(Similarity Check &gt;= 70%)"]
+    D --> E["5. Set Credentials<br/>(Password Creation)"]
+    E --> F["6. Blockchain Anchor<br/>(SHA-256 Hash on Sepolia)"]
+    F --> G["7. Verified Identity<br/>(User Dashboard)"]
 
     style A fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
     style B fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
@@ -104,11 +104,11 @@ Third-party enterprise clients integrate with HashTrust to verify and authentica
 ```mermaid
 sequenceDiagram
     autonumber
-    actor OrgClient as Enterprise Client
-    participant API as HashTrust API (/api/v1/login/user)
-    participant Auth as Key & Session Validator
-    participant DB as Firebase Firestore
-    participant Chain as Sepolia Smart Contract
+    actor OrgClient as "Enterprise Client"
+    participant API as "HashTrust API (/api/v1/login/user)"
+    participant Auth as "Key & Session Validator"
+    participant DB as "Firebase Firestore"
+    participant Chain as "Sepolia Smart Contract"
 
     OrgClient->>API: POST /api/v1/login/user (email, password, apiKey)
     API->>Auth: Verify apiKey against database
