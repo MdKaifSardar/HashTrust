@@ -128,13 +128,13 @@ sequenceDiagram
 
 ## 💎 Key Features
 
-| Capability | Technical Implementation | Benefit |
-| :--- | :--- | :--- |
-| **Tamper-Proof Ledger** | Ethereum Sepolia EVM + Ethers.js v6 | Identity records cannot be altered, spoofed, or deleted once hashed. |
-| **Multi-Modal AI Verification** | Gemini 2.5 Flash + Clarifai + Face++ | Eliminates manual document inspection and prevents identity fraud. |
-| **Enterprise API Management** | Dynamic API key provisioning with Firestore | Single-use/active API keys with granular deletion and audit logging. |
-| **Real-Time Analytics Dashboard** | Recharts + Server-side usage tracking | Visual inspection of API traffic, status codes, and request logs. |
-| **Enterprise Session Security** | Firebase Admin SDK + HttpOnly Cookies | Eliminates client-side JWT token leakage and Cross-Site Scripting (XSS) risks. |
+| Capability                        | Technical Implementation                    | Benefit                                                                        |
+| :-------------------------------- | :------------------------------------------ | :----------------------------------------------------------------------------- |
+| **Tamper-Proof Ledger**           | Ethereum Sepolia EVM + Ethers.js v6         | Identity records cannot be altered, spoofed, or deleted once hashed.           |
+| **Multi-Modal AI Verification**   | Gemini 2.5 Flash + Clarifai + Face++        | Eliminates manual document inspection and prevents identity fraud.             |
+| **Enterprise API Management**     | Dynamic API key provisioning with Firestore | Single-use/active API keys with granular deletion and audit logging.           |
+| **Real-Time Analytics Dashboard** | Recharts + Server-side usage tracking       | Visual inspection of API traffic, status codes, and request logs.              |
+| **Enterprise Session Security**   | Firebase Admin SDK + HttpOnly Cookies       | Eliminates client-side JWT token leakage and Cross-Site Scripting (XSS) risks. |
 
 ---
 
@@ -215,6 +215,7 @@ blockchain-verification/
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
+
 - **Node.js**: v18.x or v20.x or higher
 - **npm** or **pnpm** or **yarn**
 - An Ethereum testnet wallet with Sepolia ETH (for gas fees)
@@ -297,11 +298,13 @@ npm run start
 Authenticates a verified user on behalf of an enterprise client using an active Organisation API Key.
 
 **Headers:**
+
 ```http
 Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -315,6 +318,7 @@ Content-Type: application/json
 
 - **200 OK (Success):**
   Sets a secure `HttpOnly; SameSite=Strict` session cookie for subsequent requests.
+
   ```json
   {
     "ok": true,
@@ -323,6 +327,7 @@ Content-Type: application/json
   ```
 
 - **400 Bad Request:**
+
   ```json
   {
     "ok": false,
@@ -331,6 +336,7 @@ Content-Type: application/json
   ```
 
 - **401 Unauthorized:**
+
   ```json
   {
     "ok": false,
@@ -339,6 +345,7 @@ Content-Type: application/json
   ```
 
 - **500 Internal Server Error:**
+
   ```json
   {
     "ok": false,
