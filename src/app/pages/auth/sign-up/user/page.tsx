@@ -4,7 +4,7 @@ import { ToastContainer } from "react-toastify";
 
 const SignUpPage: React.FC = () => {
   return (
-    <div>
+    <div className="min-h-screen w-full bg-gray-100 dark:bg-slate-950 transition-colors">
       <SignUpFormComponent />
       <ToastContainer />
     </div>

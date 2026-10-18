@@ -86,9 +86,16 @@
 }
 
 .bg-auth-gradient {
-  background: linear-gradient(120deg, #e0f2fe 0%, #bae6fd 40%, #a5f3fc 80%, #7dd3fc 100%);
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 25%, #bae6fd 0%, #e0f2fe 70%, transparent 100%),
+    radial-gradient(ellipse 45% 50% at 80% 75%, #a5f3fc 0%, #e0f2fe 70%, transparent 100%),
+    linear-gradient(120deg, #e0f2fe 0%, #bae6fd 40%, #a5f3fc 80%, #7dd3fc 100%);
 }
 
-.dark .bg-auth-gradient {
-  background: linear-gradient(135deg, #030712 0%, #0b172a 40%, #07253a 80%, #030712 100%);
+.dark .bg-auth-gradient,
+:where(.dark) .bg-auth-gradient {
+  background:
+    radial-gradient(ellipse 50% 45% at 20% 25%, rgba(14, 116, 144, 0.35) 0%, transparent 75%),
+    radial-gradient(ellipse 45% 50% at 80% 75%, rgba(3, 105, 161, 0.3) 0%, transparent 70%),
+    linear-gradient(135deg, #030712 0%, #070d1e 50%, #030712 100%) !important;
 }

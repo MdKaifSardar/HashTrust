@@ -22,7 +22,7 @@ export default function LoginPage() {
   if (!shouldRender) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center w-full bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen flex items-center justify-center w-full bg-auth-gradient dark:bg-slate-950 transition-colors duration-200 relative">
       <ToastContainer />
       <UserLoginFormComponent />
     </div>
