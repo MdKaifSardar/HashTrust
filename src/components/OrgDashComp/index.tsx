@@ -61,7 +61,7 @@ const OrgDashboardComp: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
         <Loader />
       </div>
     );
@@ -69,22 +69,22 @@ const OrgDashboardComp: React.FC = () => {
 
   if (!organisation) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl text-red-600 font-semibold mb-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
+        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-4">
           Not authenticated
         </div>
-        <div className="text-gray-600 mb-2">
+        <div className="text-gray-600 dark:text-slate-300 mb-2">
           Please{" "}
           <a
             href="/pages/auth/sign-up/organisation"
-            className="text-blue-600 underline font-semibold"
+            className="text-blue-600 dark:text-cyan-400 underline font-semibold"
           >
             sign up
           </a>{" "}
           or{" "}
           <a
             href="/pages/auth/login/organisation"
-            className="text-blue-600 underline font-semibold"
+            className="text-blue-600 dark:text-cyan-400 underline font-semibold"
           >
             log in
           </a>{" "}
@@ -95,7 +95,7 @@ const OrgDashboardComp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 relative flex">
+    <div className="min-h-screen w-full bg-gray-50 dark:bg-slate-950 relative flex transition-colors">
       <ToastContainer />
       {/* Sidebar is now handled inside OrgSideMenuComp */}
       <OrgSideMenuComp
@@ -117,9 +117,9 @@ const OrgDashboardComp: React.FC = () => {
           )}
           {selected === "API Documentation" && <ApiKeyDoc />}
           {selected === "Settings" && (
-            <div className="bg-white p-8 rounded-lg border border-blue-100 shadow-sm w-full h-full flex flex-col justify-center items-center">
-              <h2 className="text-xl font-bold text-blue-700 mb-4">Settings</h2>
-              <div className="text-gray-600">Settings options go here.</div>
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-blue-100 dark:border-slate-800 shadow-sm w-full h-full flex flex-col justify-center items-center transition-colors">
+              <h2 className="text-xl font-bold text-blue-700 dark:text-slate-100 mb-4">Settings</h2>
+              <div className="text-gray-600 dark:text-slate-400">Settings options go here.</div>
             </div>
           )}
         </div>

@@ -94,8 +94,8 @@ const DataExtractDocComp: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             loading
-              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
+              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
           }`}
         >
           <FiChevronLeft size={28} />
@@ -107,8 +107,8 @@ const DataExtractDocComp: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             !hasExtractedData || loading
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
+              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
           }`}
         >
           <FiChevronRight size={28} />
@@ -116,20 +116,20 @@ const DataExtractDocComp: React.FC = () => {
       </div>
 
       <div className="w-full flex flex-col items-center mt-10 sm:mt-0">
-        <h2 className="text-2xl font-bold mb-4 text-blue-700 text-center w-full">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-slate-100 text-center w-full transition-colors">
           Extracted User Data
         </h2>
         <div className="p-4 w-full flex flex-col sm:flex-row items-start justify-center gap-8">
           {/* Left: Uploaded document preview and extract button */}
           <div className="w-full sm:w-1/2 flex flex-col items-center">
-            <div className="w-full bg-white rounded-lg shadow mb-4 border border-blue-100 flex flex-col items-center p-[1rem]">
+            <div className="w-full bg-white dark:bg-slate-900 rounded-lg shadow mb-4 border border-blue-100 dark:border-slate-800 flex flex-col items-center p-[1rem] transition-colors">
               {/* Uploaded document preview */}
               {previewUrl && (
                 <div className="w-full flex justify-center mb-4">
                   <img
                     src={previewUrl}
                     alt="Uploaded Document Preview"
-                    className="w-48 h-auto rounded border border-gray-300"
+                    className="w-48 h-auto rounded border border-gray-300 dark:border-slate-700"
                   />
                 </div>
               )}
@@ -152,45 +152,45 @@ const DataExtractDocComp: React.FC = () => {
                 </button>
               </div>
               {!loading && !hasExtractedData && (
-                <div className="text-red-500">No data extracted.</div>
+                <div className="text-red-500 dark:text-red-400">No data extracted.</div>
               )}
             </div>
           </div>
           {/* Right: Extracted data */}
           <div className="w-full sm:w-1/2 flex flex-col items-center">
             {hasExtractedData && (
-              <div className="w-full bg-white rounded-lg shadow mb-4 border border-blue-100 flex flex-col justify-center items-center p-[1rem]">
-                <h3 className="text-lg font-semibold text-blue-700 mb-4 text-center">
+              <div className="w-full bg-white dark:bg-slate-900 rounded-lg shadow mb-4 border border-blue-100 dark:border-slate-800 flex flex-col justify-center items-center p-[1rem] transition-colors">
+                <h3 className="text-lg font-semibold text-blue-700 dark:text-cyan-400 mb-4 text-center">
                   User Information
                 </h3>
                 <div className="grid grid-cols-1 gap-3 w-full">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700">Name:</span>
-                    <span className="text-gray-800">{userData.name}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-300">Name:</span>
+                    <span className="text-gray-800 dark:text-slate-100">{userData.name}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700">Date of Birth:</span>
-                    <span className="text-gray-800">{userData.dob}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-300">Date of Birth:</span>
+                    <span className="text-gray-800 dark:text-slate-100">{userData.dob}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700">Phone Number:</span>
-                    <span className="text-gray-800">{userData.phone}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-300">Phone Number:</span>
+                    <span className="text-gray-800 dark:text-slate-100">{userData.phone}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700">Aadhaar Number:</span>
-                    <span className="text-gray-800">{userData.idNumber}</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-300">Aadhaar Number:</span>
+                    <span className="text-gray-800 dark:text-slate-100">{userData.idNumber}</span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-gray-700 mb-1">Address:</span>
+                    <span className="font-semibold text-gray-700 dark:text-slate-300 mb-1">Address:</span>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <span className="text-gray-600">PO:</span>
-                      <span className="text-gray-800">{userData.address.po}</span>
-                      <span className="text-gray-600">District:</span>
-                      <span className="text-gray-800">{userData.address.district}</span>
-                      <span className="text-gray-600">State:</span>
-                      <span className="text-gray-800">{userData.address.state}</span>
-                      <span className="text-gray-600">Pin Code:</span>
-                      <span className="text-gray-800">{userData.address.pin}</span>
+                      <span className="text-gray-600 dark:text-slate-400">PO:</span>
+                      <span className="text-gray-800 dark:text-slate-100">{userData.address.po}</span>
+                      <span className="text-gray-600 dark:text-slate-400">District:</span>
+                      <span className="text-gray-800 dark:text-slate-100">{userData.address.district}</span>
+                      <span className="text-gray-600 dark:text-slate-400">State:</span>
+                      <span className="text-gray-800 dark:text-slate-100">{userData.address.state}</span>
+                      <span className="text-gray-600 dark:text-slate-400">Pin Code:</span>
+                      <span className="text-gray-800 dark:text-slate-100">{userData.address.pin}</span>
                     </div>
                   </div>
                 </div>

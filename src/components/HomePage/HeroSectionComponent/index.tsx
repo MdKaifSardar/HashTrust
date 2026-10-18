@@ -6,10 +6,10 @@ import { HERO_CARDS } from "@/utils/data/HomePage/Hero";
 import { FiLock, FiZap, FiLink, FiCpu } from "react-icons/fi";
 
 const ICONS: Record<string, React.ReactNode> = {
-  FiLock: <FiLock size={36} className="mb-2 text-blue-700" />,
-  FiZap: <FiZap size={36} className="mb-2 text-blue-700" />,
-  FiLink: <FiLink size={36} className="mb-2 text-blue-700" />,
-  FiCpu: <FiCpu size={36} className="mb-2 text-blue-700" />,
+  FiLock: <FiLock size={36} className="mb-2 text-blue-700 dark:text-cyan-400 transition-colors" />,
+  FiZap: <FiZap size={36} className="mb-2 text-blue-700 dark:text-cyan-400 transition-colors" />,
+  FiLink: <FiLink size={36} className="mb-2 text-blue-700 dark:text-cyan-400 transition-colors" />,
+  FiCpu: <FiCpu size={36} className="mb-2 text-blue-700 dark:text-cyan-400 transition-colors" />,
 };
 
 const HeroSectionComponent = () => {
@@ -20,7 +20,7 @@ const HeroSectionComponent = () => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="text-5xl md:text-7xl font-extrabold text-blue-700 text-center mb-6 tracking-tight drop-shadow-lg leading-tight"
+        className="text-5xl md:text-7xl font-extrabold text-blue-700 dark:text-slate-100 text-center mb-6 tracking-tight drop-shadow-lg leading-tight transition-colors"
       >
         Empower Your Identity
         <br />
@@ -32,7 +32,7 @@ const HeroSectionComponent = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-        className="text-xl md:text-2xl text-gray-700 text-center max-w-2xl mb-10"
+        className="text-xl md:text-2xl text-gray-700 dark:text-slate-300 text-center max-w-2xl mb-10 transition-colors"
       >
         Next-generation onboarding: fast, secure, and privacy-first. Your digital
         identity, verified and anchored for life.
@@ -64,13 +64,13 @@ const HeroSectionComponent = () => {
               scale: 1.08,
               boxShadow: "0 8px 32px 0 rgba(34,197,246,0.18)",
             }}
-            className="bg-gradient-to-br from-blue-50 via-cyan-50 to-emerald-100 rounded-2xl shadow-lg p-6 flex flex-col items-center text-center border-0 hover:shadow-2xl transition-all duration-200 cursor-pointer"
+            className="bg-gradient-to-br from-blue-50 via-cyan-50 to-emerald-100 dark:from-slate-900/90 dark:via-slate-800/90 dark:to-slate-900/90 dark:border dark:border-slate-800 rounded-2xl shadow-lg dark:shadow-slate-950/40 p-6 flex flex-col items-center text-center transition-all duration-200 cursor-pointer"
           >
             {ICONS[card.icon]}
-            <span className="font-semibold text-blue-700 mb-1 text-lg">
+            <span className="font-semibold text-blue-700 dark:text-cyan-300 mb-1 text-lg transition-colors">
               {card.title}
             </span>
-            <span className="text-gray-600 text-sm">{card.description}</span>
+            <span className="text-gray-600 dark:text-slate-400 text-sm transition-colors">{card.description}</span>
           </motion.div>
         ))}
       </div>

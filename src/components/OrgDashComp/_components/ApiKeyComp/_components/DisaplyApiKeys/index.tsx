@@ -18,10 +18,10 @@ const ConfirmModal = ({
 }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl p-8 max-w-sm w-full flex flex-col items-center">
-        <h3 className="text-lg font-bold text-blue-700 mb-4">Delete API Key</h3>
-        <p className="mb-6 text-gray-700 text-center">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl p-8 max-w-sm w-full flex flex-col items-center border border-transparent dark:border-slate-800 transition-colors">
+        <h3 className="text-lg font-bold text-blue-700 dark:text-slate-100 mb-4">Delete API Key</h3>
+        <p className="mb-6 text-gray-700 dark:text-slate-300 text-center">
           Are you sure you want to delete this API key?
         </p>
         <div className="flex gap-4">
@@ -33,7 +33,7 @@ const ConfirmModal = ({
           </button>
           <button
             onClick={onCancel}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-300 transition"
+            className="bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300 px-4 py-2 rounded font-semibold hover:bg-gray-300 dark:hover:bg-slate-700 transition"
           >
             Cancel
           </button>
@@ -135,19 +135,19 @@ const DisplayApiKeys = ({
 
   return (
     <div className="mt-6">
-      <div className="text-gray-700 font-semibold mb-2">Your API Keys:</div>
-      {loading && <div className="text-blue-600">Loading...</div>}
+      <div className="text-gray-700 dark:text-slate-300 font-semibold mb-2">Your API Keys:</div>
+      {loading && <div className="text-blue-600 dark:text-cyan-400">Loading...</div>}
       {apiKeys.length === 0 && !loading && (
-        <div className="text-gray-500">No API Keys found.</div>
+        <div className="text-gray-500 dark:text-slate-400">No API Keys found.</div>
       )}
       <ul className="space-y-4">
         {apiKeys.map((key, idx) => (
           <li
             key={(key.id || key.apiKey) + idx}
-            className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 rounded-lg px-3 py-2 border border-blue-200 shadow-sm"
+            className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 dark:bg-slate-800/80 rounded-lg px-3 py-2 border border-blue-200 dark:border-slate-700 shadow-sm transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="font-mono text-blue-700 text-base sm:text-lg select-all bg-white px-2 py-1 rounded border border-blue-200">
+              <span className="font-mono text-blue-700 dark:text-cyan-400 text-base sm:text-lg select-all bg-white dark:bg-slate-900 px-2 py-1 rounded border border-blue-200 dark:border-slate-700">
                 {maskApiKey(key.apiKey)}
               </span>
               <button
@@ -158,7 +158,7 @@ const DisplayApiKeys = ({
                   navigator.clipboard.writeText(key.apiKey);
                   toast.success("API Key copied to clipboard!");
                 }}
-                className="text-blue-600 hover:text-blue-800 transition p-1 rounded focus:outline-none"
+                className="text-blue-600 dark:text-cyan-400 hover:text-blue-800 dark:hover:text-cyan-300 transition p-1 rounded focus:outline-none"
               >
                 <FiCopy size={18} />
               </button>
@@ -167,12 +167,12 @@ const DisplayApiKeys = ({
                 title="Delete"
                 aria-label="Delete API Key"
                 onClick={() => handleDeleteClick(key.id)}
-                className="text-red-600 hover:text-red-800 transition p-1 rounded focus:outline-none"
+                className="text-red-600 dark:text-rose-400 hover:text-red-800 dark:hover:text-rose-300 transition p-1 rounded focus:outline-none"
               >
                 <FiTrash2 size={18} />
               </button>
             </div>
-            <div className="text-xs text-gray-500 mt-2 sm:mt-0 sm:ml-4 flex items-center">
+            <div className="text-xs text-gray-500 dark:text-slate-400 mt-2 sm:mt-0 sm:ml-4 flex items-center">
               <span>
                 Created:{" "}
                 {key.createdAt

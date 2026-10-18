@@ -226,8 +226,8 @@ const TakeUserImagesComp: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             disableAll
-              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
+              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
           }
         `}
         >
@@ -240,15 +240,15 @@ const TakeUserImagesComp: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             disableAll || !image || !faceLiveness
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
+              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
           }
         `}
         >
           <FiChevronRight size={28} />
         </button>
       </div>
-      <h2 className="text-2xl font-bold mb-4 text-blue-700 mt-12">
+      <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-slate-100 mt-12 transition-colors">
         Take Your Photo
       </h2>
 
@@ -258,14 +258,14 @@ const TakeUserImagesComp: React.FC = () => {
           autoPlay
           playsInline
           muted
-          className={`rounded border border-gray-300 ${
+          className={`rounded border border-gray-300 dark:border-slate-700 ${
             cameraOn && !image ? "" : "hidden"
           }`}
           width={320}
           height={240}
         />
         {!cameraOn && !image && (
-          <div className="text-sm text-gray-500 mt-2">Camera is off.</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-2">Camera is off.</div>
         )}
       </div>
 
@@ -274,26 +274,26 @@ const TakeUserImagesComp: React.FC = () => {
           <img
             src={userImagePreview}
             alt="User Preview"
-            className="w-32 h-32 object-cover rounded border border-gray-400"
+            className="w-32 h-32 object-cover rounded border border-gray-400 dark:border-slate-600"
           />
         )}
       </div>
 
       {livenessError && (
-        <div className="text-red-500 mb-2">{livenessError}</div>
+        <div className="text-red-500 dark:text-red-400 mb-2">{livenessError}</div>
       )}
 
       {faceLiveness !== null && (
         <div className="mb-4">
-          <div className="text-lg font-semibold">
+          <div className="text-lg font-semibold dark:text-slate-100">
             Face is{" "}
             {faceLiveness ? (
-              <span className="text-green-600">LIVE</span>
+              <span className="text-green-600 dark:text-emerald-400">LIVE</span>
             ) : (
-              <span className="text-red-600">NOT LIVE</span>
+              <span className="text-red-600 dark:text-rose-400">NOT LIVE</span>
             )}
           </div>
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-gray-700 dark:text-slate-300">
             Realness Score:{" "}
             <span className="font-mono">{faceLivenessScore}/10</span>
           </div>
@@ -323,7 +323,7 @@ const TakeUserImagesComp: React.FC = () => {
           </button>
         )}
       </div>
-      <div className="p-2 text-center mt-4 text-gray-500 text-sm">
+      <div className="p-2 text-center mt-4 text-gray-500 dark:text-slate-400 text-sm">
         {capturing
           ? "Working..."
           : livenessLoading

@@ -151,8 +151,8 @@ const FaceSimilarityCheck: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             disableAll
-              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
+              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
           }
         `}
         >
@@ -165,8 +165,8 @@ const FaceSimilarityCheck: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             disableAll || !isMatch
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
+              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
           }
         `}
         >
@@ -175,34 +175,34 @@ const FaceSimilarityCheck: React.FC = () => {
       </div>
       <div className="w-full flex flex-col items-center">
         <ToastContainer position="top-right" />
-        <h2 className="text-2xl font-bold mb-4 text-blue-700">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-slate-100 transition-colors">
           Face Similarity Check
         </h2>
         <div className="flex gap-8 mb-6 items-center">
           <div className="flex flex-col items-center">
-            <span className="text-sm text-gray-600 mb-2">Extracted Face</span>
+            <span className="text-sm text-gray-600 dark:text-slate-400 mb-2">Extracted Face</span>
             {extractedFacePreview ? (
               <img
                 src={extractedFacePreview}
                 alt="Extracted Face"
-                className="w-32 h-32 object-cover rounded border"
+                className="w-32 h-32 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
               />
             ) : (
-              <div className="w-32 h-32 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+              <div className="w-32 h-32 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
                 No Image
               </div>
             )}
           </div>
           <div className="flex flex-col items-center">
-            <span className="text-sm text-gray-600 mb-2">Taken Image</span>
+            <span className="text-sm text-gray-600 dark:text-slate-400 mb-2">Taken Image</span>
             {userImagePreview ? (
               <img
                 src={userImagePreview}
                 alt="User Face"
-                className="w-32 h-32 object-cover rounded border"
+                className="w-32 h-32 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
               />
             ) : (
-              <div className="w-32 h-32 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+              <div className="w-32 h-32 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
                 No Image
               </div>
             )}
@@ -224,20 +224,20 @@ const FaceSimilarityCheck: React.FC = () => {
           </button>
         </div>
 
-        <div className="mt-[.5rem] text-gray-700 text-sm w-full flex flex-col items-center">
+        <div className="mt-[.5rem] text-gray-700 dark:text-slate-300 text-sm w-full flex flex-col items-center">
           {loading ? (
             "Checking similarity..."
           ) : similarityScore !== null ? (
             <div className="flex flex-col items-center gap-2">
               <span>
                 Confidence Score:{" "}
-                <span className="font-mono text-blue-700 font-bold">
+                <span className="font-mono text-blue-700 dark:text-cyan-400 font-bold">
                   {similarityScore}
                 </span>
               </span>
               <span
                 className={`font-semibold text-lg ${
-                  isMatch ? "text-green-600" : "text-red-600"
+                  isMatch ? "text-green-600 dark:text-emerald-400" : "text-red-600 dark:text-rose-400"
                 }`}
               >
                 {isMatch ? "Matched" : "Not Matched"}
@@ -246,7 +246,7 @@ const FaceSimilarityCheck: React.FC = () => {
           ) : null}
         </div>
 
-        {error && <div className="text-red-500 mt-2">{error}</div>}
+        {error && <div className="text-red-500 dark:text-red-400 mt-2">{error}</div>}
       </div>
     </div>
   );

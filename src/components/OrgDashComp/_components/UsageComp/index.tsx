@@ -161,9 +161,9 @@ const UsageComp: React.FC<{ organisationUid?: string }> = ({
   }));
 
   return (
-    <div className="bg-white p-8 rounded-lg border border-blue-100 shadow-sm w-full h-fit flex flex-col justify-start items-center">
+    <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-blue-100 dark:border-slate-800 shadow-sm w-full h-fit flex flex-col justify-start items-center transition-colors">
       <div className="flex w-full justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-blue-700">API Key Usage</h2>
+        <h2 className="text-xl font-bold text-blue-700 dark:text-cyan-400 transition-colors">API Key Usage</h2>
         <button
           onClick={fetchUsage}
           disabled={loading}
@@ -173,13 +173,13 @@ const UsageComp: React.FC<{ organisationUid?: string }> = ({
         </button>
       </div>
       <div className="w-full flex flex-col md:flex-row gap-4 mb-6 items-center">
-        <label className="font-semibold text-blue-700">
+        <label className="font-semibold text-blue-700 dark:text-slate-300">
           Filter by Request Type:
         </label>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="border border-blue-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="border border-blue-300 dark:border-slate-700 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-cyan-500/50 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 transition-colors"
         >
           <option value="All">All</option>
           {allTypes.map((type) => (
@@ -190,9 +190,9 @@ const UsageComp: React.FC<{ organisationUid?: string }> = ({
         </select>
       </div>
       {loading ? (
-        <div className="text-blue-600">Loading usage data...</div>
+        <div className="text-blue-600 dark:text-cyan-400">Loading usage data...</div>
       ) : filteredData.length === 0 ? (
-        <div className="font-semibold text-gray-800 text-lg">
+        <div className="font-semibold text-gray-800 dark:text-slate-200 text-lg">
           No usage data available.
         </div>
       ) : (

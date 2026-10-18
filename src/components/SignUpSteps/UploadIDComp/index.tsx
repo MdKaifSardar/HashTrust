@@ -131,8 +131,8 @@ const UploadIDComp: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             currentStep === 0
-              ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-              : "bg-gray-200 text-blue-700 hover:bg-gray-300"
+              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
+              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
           }`}
         >
           <FiChevronLeft size={28} />
@@ -144,19 +144,19 @@ const UploadIDComp: React.FC = () => {
           className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
           ${
             !faceImage
-              ? "bg-green-300 text-white cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
+              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
           }`}
         >
           <FiChevronRight size={28} />
         </button>
       </div>
-      <label className="block text-center font-medium mb-2 text-gray-700">
+      <label className="block text-center font-medium mb-2 text-gray-700 dark:text-slate-200 transition-colors">
         Upload Identity Document (Aadhaar card, JPEG/JPG)
       </label>
       <div className="flex items-center gap-4 mb-4">
         <label
-          className={`flex flex-col items-center px-4 py-6 bg-gray-50 text-blue-500 rounded-lg shadow-lg tracking-wide border border-blue-200 cursor-pointer hover:bg-blue-50 transition ${
+          className={`flex flex-col items-center px-4 py-6 bg-gray-50 dark:bg-slate-900/80 text-blue-500 dark:text-cyan-400 rounded-lg shadow-lg tracking-wide border border-blue-200 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-800 transition ${
             extracting || loading ? "opacity-60 cursor-not-allowed" : ""
           }`}
         >
@@ -187,21 +187,21 @@ const UploadIDComp: React.FC = () => {
             <img
               src={previewUrl}
               alt="Identity Document Preview"
-              className="w-16 h-16 object-cover rounded border border-gray-300"
+              className="w-16 h-16 object-cover rounded border border-gray-300 dark:border-slate-700"
             />
           ) : (
-            <span className="text-gray-700">{previewUrl}</span>
+            <span className="text-gray-700 dark:text-slate-300">{previewUrl}</span>
           ))}
       </div>
       {loading && <Loader />}
-      {extractError && <div className="text-red-500 mb-2">{extractError}</div>}
+      {extractError && <div className="text-red-500 dark:text-red-400 mb-2">{extractError}</div>}
       {faceImage && (
         <div className="flex flex-col items-center mt-2">
-          <span className="text-gray-700 mb-1">Extracted Face Preview:</span>
+          <span className="text-gray-700 dark:text-slate-300 mb-1">Extracted Face Preview:</span>
           <img
             src={faceImage}
             alt="Extracted Face"
-            className="w-24 h-24 object-cover rounded-full border border-gray-300"
+            className="w-24 h-24 object-cover rounded-full border border-gray-300 dark:border-slate-700 shadow-md"
           />
         </div>
       )}

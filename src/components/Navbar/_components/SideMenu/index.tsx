@@ -4,6 +4,7 @@ import Link from "next/link";
 import { NAV_LINKS } from "@/utils/data/Navbar";
 import { motion } from "framer-motion";
 import { getRoleFromSessionCookie } from "@/lib/actions/user.actions";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const SideMenu = ({
   open,
@@ -135,16 +136,16 @@ const SideMenu = ({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "-100%", opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed top-0 left-0 h-screen w-[70vw] max-w-xs bg-white shadow-lg z-50 flex flex-col pt-6 px-6 gap-4 md:hidden"
+      className="fixed top-0 left-0 h-screen w-[75vw] max-w-xs bg-white dark:bg-slate-900 border-r border-transparent dark:border-slate-800 shadow-2xl z-50 flex flex-col pt-6 px-6 gap-4 md:hidden transition-colors"
       style={{ zIndex: 50 }}
       onClick={(e) => e.stopPropagation()}
     >
       <button
-        className="self-end mb-4 p-2 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+        className="self-end mb-2 p-2 rounded hover:bg-blue-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:focus:ring-cyan-500/50"
         aria-label="Close menu"
         onClick={() => setOpen(false)}
       >
-        <span className="text-2xl text-blue-700">&times;</span>
+        <span className="text-2xl text-blue-700 dark:text-cyan-400">&times;</span>
       </button>
       {/* Render all links except User/Org Sign Up and Login as dropdowns */}
       {filteredLinks.map((link) =>
@@ -295,11 +296,19 @@ const SideMenu = ({
       {hasAuth && (
         <button
           onClick={handleLogout}
-          className="text-lg font-semibold text-blue-700 hover:text-red-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-red-300"
+          className="text-lg font-semibold text-blue-700 dark:text-slate-200 hover:text-red-500 dark:hover:text-red-400 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-red-300 dark:focus:ring-red-500/50"
         >
           Logout
         </button>
       )}
+
+      {/* Theme Toggle in Mobile Drawer */}
+      <div className="mt-auto pt-4 border-t border-blue-100 dark:border-slate-800 flex items-center justify-between pb-6">
+        <span className="text-sm font-medium text-slate-600 dark:text-slate-400 font-sans">
+          Appearance
+        </span>
+        <ThemeToggle />
+      </div>
     </motion.div>
   );
 };
