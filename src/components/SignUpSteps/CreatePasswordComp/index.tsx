@@ -4,7 +4,9 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentStep, selectCurrentStep } from "../../../redux/features/signUpSteps/stepSlice";
 import { setUserData, selectUserData } from "../../../redux/features/userData/userDataSlice";
-import { FiArrowLeft, FiArrowRight, FiLock, FiMail, FiKey } from "react-icons/fi";
+import { checkEmailAvailabilityAction } from "@/lib/actions/user.actions";
+import { FiArrowLeft, FiArrowRight, FiLock, FiMail, FiKey, FiAlertCircle, FiExternalLink } from "react-icons/fi";
+import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
@@ -25,17 +27,24 @@ export const CreatePasswordComp: React.FC = () => {
     confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [emailConflict, setEmailConflict] = useState<{
+    message: string;
+    linkText: string;
+    linkHref: string;
+  } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(null);
+    setEmailConflict(null);
   };
 
   const handlePrev = () => {
     dispatch(setCurrentStep(currentStep - 1));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!form.email) {
       setError("Please enter your email.");
       return;
@@ -52,11 +61,50 @@ export const CreatePasswordComp: React.FC = () => {
       setError("Passwords do not match.");
       return;
     }
-    dispatch(setUserData({ email: form.email, password: form.password }));
-    dispatch(setCurrentStep(currentStep + 1));
+
+    setValidating(true);
+    setError(null);
+    setEmailConflict(null);
+
+    try {
+      const res = await checkEmailAvailabilityAction(form.email);
+      if (!res.available) {
+        if (res.reason === "ORG_EXISTS") {
+          setEmailConflict({
+            message: res.message || "This email is registered as an Organisation account.",
+            linkText: "Go to Organisation Login",
+            linkHref: "/pages/auth/login/organisation",
+          });
+        } else {
+          setEmailConflict({
+            message: res.message || "An account already exists with this email.",
+            linkText: "Log in to your Account",
+            linkHref: "/pages/auth/login/user",
+          });
+        }
+        return;
+      }
+
+      // Available: update Redux and advance to Review & Mint
+      dispatch(
+        setUserData({
+          email: form.email.trim().toLowerCase(),
+          password: form.password,
+        })
+      );
+      dispatch(setCurrentStep(currentStep + 1));
+    } catch (err: any) {
+      setError("Unable to verify email availability. Please try again.");
+    } finally {
+      setValidating(false);
+    }
   };
 
-  const isValid = !!form.email && !!form.password && !!form.confirmPassword && form.password === form.confirmPassword;
+  const isValid =
+    !!form.email &&
+    !!form.password &&
+    !!form.confirmPassword &&
+    form.password === form.confirmPassword;
 
   return (
     <div className="w-full flex flex-col">
@@ -115,6 +163,26 @@ export const CreatePasswordComp: React.FC = () => {
           required
         />
 
+        {/* Inline Conflict Banner with Login Link */}
+        {emailConflict && (
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-200 space-y-2">
+            <div className="flex items-start gap-2">
+              <FiAlertCircle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <span>{emailConflict.message}</span>
+            </div>
+            <div>
+              <Link
+                href={emailConflict.linkHref}
+                className="inline-flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-300 hover:underline"
+              >
+                <span>{emailConflict.linkText}</span>
+                <FiExternalLink size={12} />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* General Error */}
         {error && (
           <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-xs text-rose-600 dark:text-rose-400 font-medium">
             {error}
@@ -128,16 +196,17 @@ export const CreatePasswordComp: React.FC = () => {
           variant="outline"
           onClick={handlePrev}
           leftIcon={<FiArrowLeft size={16} />}
+          disabled={validating}
         >
           Back
         </Button>
         <Button
           variant="primary"
           onClick={handleNext}
-          disabled={!isValid}
+          disabled={!isValid || validating}
           rightIcon={<FiArrowRight size={16} />}
         >
-          Review Data & Mint
+          {validating ? "Checking Email..." : "Review Data & Mint"}
         </Button>
       </div>
     </div>

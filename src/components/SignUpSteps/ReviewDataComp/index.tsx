@@ -22,7 +22,7 @@ import {
   selectPreviewUrl,
   selectIdentityDocumentFile,
 } from "../../../redux/features/idUpload/idUploadSlice";
-import { FiArrowLeft, FiShield, FiCheckCircle, FiCheck, FiLock } from "react-icons/fi";
+import { FiArrowLeft, FiShield, FiCheckCircle, FiCheck, FiLock, FiAlertTriangle } from "react-icons/fi";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 
@@ -41,12 +41,14 @@ export const ReviewDataComp: React.FC = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handlePrev = () => {
     dispatch(setCurrentStep(currentStep - 1));
   };
 
   const handleSubmit = () => {
+    setSubmitError(null);
     setShowModal(true);
   };
 
@@ -96,7 +98,7 @@ export const ReviewDataComp: React.FC = () => {
         userData.idNumber || ""
       );
       setShowModal(false);
-      if (result.sessionCookie) {
+      if (result.ok && result.sessionCookie) {
         const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
         document.cookie = `session=${result.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
@@ -105,13 +107,15 @@ export const ReviewDataComp: React.FC = () => {
         setTimeout(() => {
           window.location.href = "/pages/user/dashboard";
         }, 1000);
-      } else if (result.message) {
-        toast.error(result.message);
       } else {
-        toast.error("Verification failed.");
+        const msg = result.message || "Minting failed. Your data is preserved; please retry.";
+        setSubmitError(msg);
+        toast.error(msg);
       }
     } catch (e: any) {
-      toast.error("Failed to submit data: " + (e?.message || "Unknown error"));
+      const msg = "Failed to submit data: " + (e?.message || "Unknown error");
+      setSubmitError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -138,6 +142,20 @@ export const ReviewDataComp: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Retry Alert Banner if Minting Failed */}
+      {submitError && (
+        <div className="p-4 mb-6 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3">
+          <FiAlertTriangle className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" size={18} />
+          <div className="flex-1 text-xs sm:text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-bold mb-1">Blockchain Anchoring Could Not Complete</p>
+            <p className="text-xs text-amber-700 dark:text-amber-300">{submitError}</p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-2">
+              Your verified details are preserved. You can click <strong>"Confirm & Mint Identity Proof"</strong> below to retry.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Digital Identity Passport Card */}
       <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-white via-sky-50/20 to-emerald-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200 dark:border-white/10 shadow-lg relative overflow-hidden">

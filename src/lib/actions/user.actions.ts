@@ -16,6 +16,7 @@ import {
   query,
   where,
   getDocs,
+  deleteDoc,
 } from "firebase/firestore";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 import { getContract } from "@/utils/contract";
@@ -34,17 +35,19 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID!,
   measurementId: process.env.FIREBASE_MEASUREMENT_ID!,
 };
+
 const firebaseApp = initializeApp(firebaseConfig);
 
-export interface UserImageCloudinary {
+interface UserImageCloudinary {
   url: string;
   public_id: string;
 }
+
 export interface User {
-  uid: string;
-  name: string;
-  emailAddress: string;
-  userImage: UserImageCloudinary | null;
+  uid?: string;
+  name?: string;
+  emailAddress?: string;
+  userImage?: UserImageCloudinary | null;
   phoneNumber?: string;
   userAddress?: string;
   dateOfBirth?: string;
@@ -56,7 +59,7 @@ export interface CreateUserResult {
   error: string | null;
 }
 
-// Modified Cloudinary upload to extract public_id
+// Cloudinary upload helper
 async function uploadAndExtract(file: File, uploadPreset: string) {
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const formData = new FormData();
@@ -82,6 +85,108 @@ async function uploadAndExtract(file: File, uploadPreset: string) {
   };
 }
 
+// Cloudinary deletion helper for atomic rollback
+async function deleteCloudinaryImage(publicId: string) {
+  try {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) return;
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const signatureString = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+    const crypto = await import("crypto");
+    const signature = crypto.createHash("sha1").update(signatureString).digest("hex");
+    const formData = new FormData();
+    formData.append("public_id", publicId);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("signature", signature);
+    await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+      method: "POST",
+      body: formData,
+    });
+  } catch (_) {}
+}
+
+export async function checkEmailAvailabilityAction(email: string): Promise<{
+  available: boolean;
+  reason?: "USER_EXISTS" | "ORG_EXISTS" | "INVALID_EMAIL";
+  message?: string;
+}> {
+  try {
+    const adminApp = getOrInitAdminApp();
+    if (!adminApp) {
+      return { available: false, message: "Server error. Admin SDK not initialized." };
+    }
+
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      return { available: false, reason: "INVALID_EMAIL", message: "Please enter a valid email address." };
+    }
+
+    const adminDb = adminApp.firestore();
+
+    // 1. Check Firestore 'users' collection
+    const userDocSnap = await adminDb
+      .collection("users")
+      .where("emailAddress", "==", normalizedEmail)
+      .limit(1)
+      .get();
+
+    if (!userDocSnap.empty) {
+      return {
+        available: false,
+        reason: "USER_EXISTS",
+        message: "An account already exists with this email. Please log in instead.",
+      };
+    }
+
+    // 2. Check Firestore 'organisations' collection
+    const orgDocSnap = await adminDb
+      .collection("organisations")
+      .where("email", "==", normalizedEmail)
+      .limit(1)
+      .get();
+
+    if (!orgDocSnap.empty) {
+      return {
+        available: false,
+        reason: "ORG_EXISTS",
+        message: "This email is registered as an Organisation account. Please log in via the Organisation Portal.",
+      };
+    }
+
+    // 3. Check Firebase Auth user
+    try {
+      const authUser = await adminApp.auth().getUserByEmail(normalizedEmail);
+      if (authUser) {
+        const role = authUser.customClaims?.role;
+        if (role === "organisation") {
+          return {
+            available: false,
+            reason: "ORG_EXISTS",
+            message: "This email is registered as an Organisation account. Please log in via the Organisation Portal.",
+          };
+        }
+        return {
+          available: false,
+          reason: "USER_EXISTS",
+          message: "An account already exists with this email. Please log in instead.",
+        };
+      }
+    } catch (authErr: any) {
+      if (authErr?.code === "auth/user-not-found") {
+        return { available: true };
+      }
+      throw authErr;
+    }
+
+    return { available: true };
+  } catch (err: any) {
+    return { available: true };
+  }
+}
+
 export async function createUser(
   name: string,
   emailAddress: string,
@@ -98,283 +203,28 @@ export async function createUser(
   role = "user",
   idNumber?: string // Aadhaar number
 ): Promise<{ ok: boolean; message?: string; sessionCookie?: string }> {
+  const adminApp = getOrInitAdminApp();
+  const normalizedEmail = emailAddress.trim().toLowerCase();
+
+  // Tracking variables for Atomic Saga Rollback
+  let createdFirebaseUser: FirebaseUser | null = null;
+  let createdDocRef: any = null;
+  const uploadedCloudinaryPublicIds: string[] = [];
+
+  const base64ToFile = (base64: string, filename: string): File => {
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "application/octet-stream";
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new File([u8arr], filename, { type: mime });
+  };
+
   try {
-    getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
-    // ✅ Convert base64 to File
-    const base64ToFile = (base64: string, filename: string): File => {
-      const arr = base64.split(",");
-      const mime = arr[0].match(/:(.*?);/)?.[1] || "application/octet-stream";
-      const bstr = atob(arr[1]);
-      const u8arr = new Uint8Array(bstr.length);
-      for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-      return new File([u8arr], filename, { type: mime });
-    };
+    const firestoreDb = getFirestore(firebaseApp);
     const auth = getAuth(firebaseApp);
 
-    // ✅ Step 1: Create Firebase Auth user
-    let userCredential;
-    try {
-      userCredential = await createUserWithEmailAndPassword(
-        auth,
-        emailAddress,
-        password
-      );
-    } catch (err: any) {
-      if (err?.code === "auth/email-already-in-use") {
-        // Efficient Firestore query for user document with same email and role
-        const firestoreDb = getFirestore(firebaseApp);
-
-        // Check for duplicate Aadhaar number before creating user
-        if (idNumber) {
-          const aadhaarQuery = query(
-            collection(firestoreDb, "users"),
-            where("idNumber", "==", idNumber)
-          );
-          const aadhaarSnap = await getDocs(aadhaarQuery);
-          if (!aadhaarSnap.empty) {
-            return {
-              ok: false,
-              message: "A user with this Aadhaar number already exists.",
-            };
-          }
-        }
-
-        const userQuery = query(
-          collection(firestoreDb, "users"),
-          where("emailAddress", "==", emailAddress),
-          where("role", "==", role)
-        );
-        const userSnap = await getDocs(userQuery);
-        if (!userSnap.empty) {
-          return {
-            ok: false,
-            message:
-              "This email is already registered as a user. Please use another email or log in.",
-          };
-        }
-        // If no user doc exists, sign in to get Firebase UID and proceed
-        let firebaseUser: FirebaseUser;
-        try {
-          const signInRes = await signInWithEmailAndPassword(
-            auth,
-            emailAddress,
-            password
-          );
-          firebaseUser = signInRes.user;
-        } catch (signInErr: any) {
-          return {
-            ok: false,
-            message:
-              "Email exists but password is incorrect. Please log in or use a different email.",
-          };
-        }
-
-        // Step 2: Prepare files for Cloudinary
-        const userImageFileObj =
-          typeof userImageFile === "string" && userImageFile.startsWith("data:")
-            ? base64ToFile(userImageFile, "user-image.jpg")
-            : userImageFile instanceof File
-            ? userImageFile
-            : undefined;
-
-        let identityDocumentFileObj: File | undefined = undefined;
-        if (identityDocumentFile) {
-          if (typeof identityDocumentFile === "string") {
-            if (identityDocumentFile.startsWith("data:")) {
-              identityDocumentFileObj = base64ToFile(
-                identityDocumentFile,
-                "identity-document.jpg"
-              );
-            }
-          } else if (identityDocumentFile instanceof File) {
-            identityDocumentFileObj = identityDocumentFile;
-          }
-        }
-
-        let userImageUrl: string | undefined;
-        let userImagePublicId: string | undefined;
-        let identityDocumentUrl: string | undefined;
-        let identityDocumentPublicId: string | undefined;
-
-        // Step 3: Upload user image to Cloudinary
-        if (userImageFileObj) {
-          try {
-            const result = await uploadAndExtract(
-              userImageFileObj,
-              "user_images"
-            );
-            userImageUrl = result.url;
-            userImagePublicId = result.public_id;
-          } catch (err: any) {
-            return {
-              ok: false,
-              message:
-                "Failed to upload user image: " +
-                (err.message || "Unknown error"),
-            };
-          }
-        } else {
-          return {
-            ok: false,
-            message: "User image not provided or invalid.",
-          };
-        }
-
-        // Step 4: Upload identity document to Cloudinary
-        if (identityDocumentFileObj) {
-          try {
-            const result = await uploadAndExtract(
-              identityDocumentFileObj,
-              "identity_documents"
-            );
-            identityDocumentUrl = result.url;
-            identityDocumentPublicId = result.public_id;
-          } catch (err: any) {
-            return {
-              ok: false,
-              message:
-                "Failed to upload identity document: " +
-                (err.message || "Unknown error"),
-            };
-          }
-        } else {
-          return {
-            ok: false,
-            message: "Identity document not provided or invalid.",
-          };
-        }
-
-        // Step 5: Update Firebase Auth profile
-        try {
-          await updateProfile(firebaseUser, {
-            displayName: name,
-            photoURL: userImageUrl,
-          });
-          // Set custom claim for role
-          const adminApp = getOrInitAdminApp();
-          if (adminApp) {
-            const adminAuth = adminApp.auth();
-            await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
-          }
-        } catch (err: any) {
-          return {
-            ok: false,
-            message:
-              "Failed to update user profile: " +
-              (err.message || "Unknown error"),
-          };
-        }
-        // Step 6: Get ID token
-        let idToken: string | null = null;
-        try {
-          // Re-fetch ID token to ensure custom claims are present
-          idToken = await firebaseUser.getIdToken(true);
-        } catch (err: any) {
-          return {
-            ok: false,
-            message:
-              "Failed to get authentication token: " +
-              (err.message || "Unknown error"),
-          };
-        }
-
-        // Step 7: Save user data in Firestore (use Firebase UID for hash)
-        const db = getFirestore(firebaseApp);
-        // Step 8: Generate hash of user data (include idNumber)
-        const userDataHash = generateUserDataHash({
-          uid: firebaseUser.uid,
-          name,
-          emailAddress,
-          userImage:
-            userImageUrl && userImagePublicId
-              ? { url: userImageUrl, public_id: userImagePublicId }
-              : null,
-          phoneNumber,
-          userAddress,
-          dateOfBirth,
-          identityDocument:
-            identityDocumentUrl && identityDocumentPublicId
-              ? {
-                  url: identityDocumentUrl,
-                  public_id: identityDocumentPublicId,
-                }
-              : null,
-          verificationStatus: verificationStatus || null,
-          createdAt: new Date().toISOString(),
-          idNumber: idNumber || null, // include Aadhaar in hash
-        });
-
-        const userDoc = {
-          uid: firebaseUser.uid,
-          name,
-          emailAddress,
-          userImage:
-            userImageUrl && userImagePublicId
-              ? { url: userImageUrl, public_id: userImagePublicId }
-              : null,
-          phoneNumber,
-          userAddress,
-          dateOfBirth,
-          identityDocument:
-            identityDocumentUrl && identityDocumentPublicId
-              ? {
-                  url: identityDocumentUrl,
-                  public_id: identityDocumentPublicId,
-                }
-              : null,
-          verificationStatus: verificationStatus || null,
-          createdAt: new Date().toISOString(),
-          hash: userDataHash,
-          role,
-          idNumber: idNumber || null, // save Aadhaar in user doc
-        };
-
-        try {
-          await addDoc(collection(db, "users"), userDoc);
-        } catch (err: any) {
-          return {
-            ok: false,
-            message:
-              "Failed to save user data to Firestore: " +
-              (err.message || "Unknown error"),
-          };
-        }
-
-        // Step 9: Save hash to blockchain using uploadHash utility
-        const blockchainResult = await uploadHash(userDataHash);
-
-        // Step 10: Return success with session cookie
-        let sessionCookie: string | undefined = undefined;
-        try {
-          // Only run admin SDK code on server
-          if (typeof window === "undefined") {
-            let adminApp = getOrInitAdminApp();
-            if (adminApp) {
-              const adminAuth = adminApp.auth();
-              const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-              sessionCookie = await adminAuth.createSessionCookie(idToken!, {
-                expiresIn,
-              });
-            }
-          }
-        } catch (err: any) {
-          sessionCookie = undefined;
-        }
-        return {
-          ok: true,
-          message: "User created and hash uploaded to blockchain!",
-          sessionCookie,
-        };
-      }
-      return {
-        ok: false,
-        message: err?.message || "Failed to create user.",
-      };
-    }
-    const firebaseUser: FirebaseUser = userCredential.user;
-
-    // Check for duplicate Aadhaar number before creating user
-    const firestoreDb = getFirestore(firebaseApp);
+    // 1. Check for duplicate Aadhaar number before doing heavy work
     if (idNumber) {
       const aadhaarQuery = query(
         collection(firestoreDb, "users"),
@@ -384,12 +234,46 @@ export async function createUser(
       if (!aadhaarSnap.empty) {
         return {
           ok: false,
-          message: "A user with this Aadhaar number already exists.",
+          message: "A user with this Aadhaar/Gov ID number is already registered.",
         };
       }
     }
 
-    // Step 2: Prepare files for Cloudinary
+    // 2. Check for duplicate email in Firestore
+    const userQuery = query(
+      collection(firestoreDb, "users"),
+      where("emailAddress", "==", normalizedEmail)
+    );
+    const userSnap = await getDocs(userQuery);
+    if (!userSnap.empty) {
+      return {
+        ok: false,
+        message: "This email is already registered as a user. Please log in.",
+      };
+    }
+
+    // 3. Create Firebase Auth user
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password
+      );
+      createdFirebaseUser = userCredential.user;
+    } catch (authErr: any) {
+      if (authErr?.code === "auth/email-already-in-use") {
+        return {
+          ok: false,
+          message: "An account already exists with this email. Please log in instead.",
+        };
+      }
+      return {
+        ok: false,
+        message: authErr?.message || "Failed to create authentication user.",
+      };
+    }
+
+    // 4. Prepare & Upload files to Cloudinary
     const userImageFileObj =
       typeof userImageFile === "string" && userImageFile.startsWith("data:")
         ? base64ToFile(userImageFile, "user-image.jpg")
@@ -411,175 +295,108 @@ export async function createUser(
       }
     }
 
-    let userImageUrl: string | undefined;
-    let userImagePublicId: string | undefined;
-    let identityDocumentUrl: string | undefined;
-    let identityDocumentPublicId: string | undefined;
-
-    // Step 3: Upload user image to Cloudinary
-    if (userImageFileObj) {
-      try {
-        const result = await uploadAndExtract(userImageFileObj, "user_images");
-        userImageUrl = result.url;
-        userImagePublicId = result.public_id;
-      } catch (err: any) {
-        return {
-          ok: false,
-          message:
-            "Failed to upload user image: " + (err.message || "Unknown error"),
-        };
-      }
-    } else {
-      return {
-        ok: false,
-        message: "User image not provided or invalid.",
-      };
+    if (!userImageFileObj) {
+      throw new Error("User biometric image not provided or invalid.");
+    }
+    if (!identityDocumentFileObj) {
+      throw new Error("Identity document not provided or invalid.");
     }
 
-    // Step 4: Upload identity document to Cloudinary
-    if (identityDocumentFileObj) {
-      try {
-        const result = await uploadAndExtract(
-          identityDocumentFileObj,
-          "identity_documents"
-        );
-        identityDocumentUrl = result.url;
-        identityDocumentPublicId = result.public_id;
-      } catch (err: any) {
-        return {
-          ok: false,
-          message:
-            "Failed to upload identity document: " +
-            (err.message || "Unknown error"),
-        };
-      }
-    } else {
-      return {
-        ok: false,
-        message: "Identity document not provided or invalid.",
-      };
-    }
+    const userUploadRes = await uploadAndExtract(userImageFileObj, "user_images");
+    uploadedCloudinaryPublicIds.push(userUploadRes.public_id);
+    const userImageUrl = userUploadRes.url;
+    const userImagePublicId = userUploadRes.public_id;
 
-    // Step 5: Update Firebase Auth profile
-    try {
-      await updateProfile(firebaseUser, {
-        displayName: name,
-        photoURL: userImageUrl,
-      });
-      // Set custom claim for role
-      const adminApp = getOrInitAdminApp();
-      if (adminApp) {
-        const adminAuth = adminApp.auth();
-        await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
-      }
-    } catch (err: any) {
-      return {
-        ok: false,
-        message:
-          "Failed to update user profile: " + (err.message || "Unknown error"),
-      };
-    }
-    // Step 6: Get ID token
-    let idToken: string | null = null;
-    try {
-      // Re-fetch ID token to ensure custom claims are present
-      idToken = await firebaseUser.getIdToken(true);
-    } catch (err: any) {
-      return {
-        ok: false,
-        message:
-          "Failed to get authentication token: " +
-          (err.message || "Unknown error"),
-      };
-    }
+    const idUploadRes = await uploadAndExtract(identityDocumentFileObj, "identity_documents");
+    uploadedCloudinaryPublicIds.push(idUploadRes.public_id);
+    const identityDocumentUrl = idUploadRes.url;
+    const identityDocumentPublicId = idUploadRes.public_id;
 
-    // Step 7: Save user data in Firestore
-    const db = getFirestore(firebaseApp);
-    // Step 8: Generate hash of user data (include idNumber)
-    const userDataHash = generateUserDataHash({
-      uid: firebaseUser.uid,
-      name,
-      emailAddress,
-      userImage:
-        userImageUrl && userImagePublicId
-          ? { url: userImageUrl, public_id: userImagePublicId }
-          : null,
-      phoneNumber,
-      userAddress,
-      dateOfBirth,
-      identityDocument:
-        identityDocumentUrl && identityDocumentPublicId
-          ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
-          : null,
-      verificationStatus: verificationStatus || null,
-      createdAt: new Date().toISOString(),
-      idNumber: idNumber || null, // include Aadhaar in hash
+    // 5. Update Firebase Auth profile & Custom Claims
+    await updateProfile(createdFirebaseUser, {
+      displayName: name,
+      photoURL: userImageUrl,
     });
 
-    const userDoc = {
-      uid: firebaseUser.uid,
+    if (adminApp) {
+      const adminAuth = adminApp.auth();
+      await adminAuth.setCustomUserClaims(createdFirebaseUser.uid, { role });
+    }
+
+    // 6. Compute Cryptographic User Data Hash
+    const userDataHash = generateUserDataHash({
+      uid: createdFirebaseUser.uid,
       name,
-      emailAddress,
-      userImage:
-        userImageUrl && userImagePublicId
-          ? { url: userImageUrl, public_id: userImagePublicId }
-          : null,
+      emailAddress: normalizedEmail,
+      userImage: { url: userImageUrl, public_id: userImagePublicId },
       phoneNumber,
       userAddress,
       dateOfBirth,
-      identityDocument:
-        identityDocumentUrl && identityDocumentPublicId
-          ? { url: identityDocumentUrl, public_id: identityDocumentPublicId }
-          : null,
+      identityDocument: { url: identityDocumentUrl, public_id: identityDocumentPublicId },
       verificationStatus: verificationStatus || null,
       createdAt: new Date().toISOString(),
-      hash: userDataHash, // <-- save the hash in the user document
-      role, // <-- save role
-      idNumber: idNumber || null, // save Aadhaar in user doc
+      idNumber: idNumber || null,
+    });
+
+    // 7. Save to Firestore
+    const userDoc = {
+      uid: createdFirebaseUser.uid,
+      name,
+      emailAddress: normalizedEmail,
+      userImage: { url: userImageUrl, public_id: userImagePublicId },
+      phoneNumber,
+      userAddress,
+      dateOfBirth,
+      identityDocument: { url: identityDocumentUrl, public_id: identityDocumentPublicId },
+      verificationStatus: verificationStatus || null,
+      createdAt: new Date().toISOString(),
+      hash: userDataHash,
+      role,
+      idNumber: idNumber || null,
     };
 
-    try {
-      await addDoc(collection(db, "users"), userDoc);
-    } catch (err: any) {
-      return {
-        ok: false,
-        message:
-          "Failed to save user data to Firestore: " +
-          (err.message || "Unknown error"),
-      };
-    }
+    createdDocRef = await addDoc(collection(firestoreDb, "users"), userDoc);
 
-    // Step 9: Save hash to blockchain using uploadHash utility
+    // 8. Blockchain Anchoring (With 3-attempt bounded retries)
     const blockchainResult = await uploadHash(userDataHash);
-
-    // Step 10: Return success with session cookie
-    let sessionCookie: string | undefined = undefined;
-    try {
-      // Only run admin SDK code on server
-      if (typeof window === "undefined") {
-        let adminApp = getOrInitAdminApp();
-        if (adminApp) {
-          const adminAuth = adminApp.auth();
-          // Set custom user claims for role
-          await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
-          const refreshedToken = await firebaseUser.getIdToken(true);
-          const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-          sessionCookie = await adminAuth.createSessionCookie(
-            refreshedToken || idToken!,
-            { expiresIn }
-          );
-        }
-      }
-    } catch (err: any) {
-      sessionCookie = undefined;
+    if (!blockchainResult.success) {
+      throw new Error(blockchainResult.error || "Failed to anchor hash to the blockchain.");
     }
+
+    // 9. Create 5-day secure session cookie
+    let sessionCookie: string | undefined = undefined;
+    if (adminApp && typeof window === "undefined") {
+      const idToken = await createdFirebaseUser.getIdToken(true);
+      const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+      sessionCookie = await adminApp.auth().createSessionCookie(idToken, { expiresIn });
+    }
+
     return {
       ok: true,
-      message: "User created, data saved, and hash uploaded to blockchain! ",
+      message: "Identity verified and anchored on blockchain successfully!",
       sessionCookie,
     };
   } catch (err: any) {
-    let errorMsg = err?.message || "Unknown error occurred";
+    // 🚨 SAGA ROLLBACK: Ensure All-or-Nothing Consistency
+    if (createdDocRef) {
+      try {
+        await deleteDoc(createdDocRef);
+      } catch (_) {}
+    }
+
+    if (uploadedCloudinaryPublicIds.length > 0) {
+      for (const publicId of uploadedCloudinaryPublicIds) {
+        await deleteCloudinaryImage(publicId);
+      }
+    }
+
+    if (createdFirebaseUser && adminApp) {
+      try {
+        await adminApp.auth().deleteUser(createdFirebaseUser.uid);
+      } catch (_) {}
+    }
+
+    let errorMsg = err?.message || "Unknown error occurred during registration.";
     if (
       typeof err?.message === "string" &&
       (err.message.includes("PERMISSION_DENIED") ||
@@ -588,6 +405,7 @@ export async function createUser(
       errorMsg =
         "Firestore permission denied. Please check your Firestore security rules to allow writing to the 'users' collection.";
     }
+
     return {
       ok: false,
       message: errorMsg,
@@ -968,4 +786,3 @@ export async function getRoleFromSessionCookie(
     };
   }
 }
-
