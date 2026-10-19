@@ -22,22 +22,7 @@ import { getContract } from "@/utils/contract";
 import { generateUserDataHash } from "@/utils/generateDataHash";
 import { uploadHash } from "@/utils/uploadHash";
 
-let adminInitialized = false;
-
-function getOrInitAdminApp() {
-  if (typeof window !== "undefined") return; // Never run admin SDK on client
-  if (!adminInitialized && !admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      }),
-    });
-    adminInitialized = true;
-  }
-  return admin;
-}
+import { getOrInitAdminApp } from "@/lib/database/AdminApp";
 
 // Firebase config
 const firebaseConfig = {
@@ -575,10 +560,14 @@ export async function createUser(
         let adminApp = getOrInitAdminApp();
         if (adminApp) {
           const adminAuth = adminApp.auth();
+          // Set custom user claims for role
+          await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
+          const refreshedToken = await firebaseUser.getIdToken(true);
           const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-          sessionCookie = await adminAuth.createSessionCookie(idToken!, {
-            expiresIn,
-          });
+          sessionCookie = await adminAuth.createSessionCookie(
+            refreshedToken || idToken!,
+            { expiresIn }
+          );
         }
       }
     } catch (err: any) {
@@ -614,14 +603,21 @@ export async function loginUser(
   try {
     getOrInitAdminApp(); // <-- Add this line at the start
     const auth = getAuth(firebaseApp);
-    // 1. Find user in Firestore by email and role
+    // 1. Find user in Firestore by email and verify role
     const adminDb = getAdminFirestore();
-    const userSnap = await adminDb
+    let userSnap = await adminDb
       .collection("users")
       .where("emailAddress", "==", email)
-      .where("role", "==", role)
       .limit(1)
       .get();
+
+    if (userSnap.empty) {
+      userSnap = await adminDb
+        .collection("users")
+        .where("email", "==", email)
+        .limit(1)
+        .get();
+    }
 
     if (userSnap.empty) {
       return {
@@ -630,6 +626,12 @@ export async function loginUser(
       };
     }
     const userData = userSnap.docs[0].data();
+    if (userData.role && userData.role !== role) {
+      return {
+        ok: false,
+        message: "No user found with this email and role.",
+      };
+    }
 
     // 2. Use the saved hash from Firestore
     const userDataHash = userData.hash;
@@ -664,8 +666,6 @@ export async function loginUser(
     const firebaseUser = userCredential.user;
     let idToken: string | undefined;
     try {
-      idToken = await firebaseUser.getIdToken();
-      // Set custom claim for role
       const adminApp = getOrInitAdminApp();
       if (!adminApp) {
         return {
@@ -673,10 +673,8 @@ export async function loginUser(
           message: "Admin SDK not initialized. Server-side operation required.",
         };
       }
-      if (adminApp) {
-        const adminAuth = adminApp.auth();
-        await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
-      }
+      const adminAuth = adminApp.auth();
+      await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
       // Re-fetch ID token to ensure custom claims are present
       idToken = await firebaseUser.getIdToken(true);
     } catch (err: any) {
@@ -710,7 +708,7 @@ export async function loginUser(
 }
 
 export async function authenticateUserWithSessionCookie(
-  sessionCookie: string
+  sessionCookie?: string
 ): Promise<{ ok: boolean; user?: any; message?: string }> {
   try {
     getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
@@ -726,45 +724,155 @@ export async function authenticateUserWithSessionCookie(
     }
     const adminAuth = adminApp.auth();
     const adminDb = adminApp.firestore();
-    // Verify the session cookie
-    const decodedToken = await adminAuth.verifySessionCookie(
-      sessionCookie,
-      true
-    );
-    const uid = decodedToken.uid;
-    const role = decodedToken.role; // <-- get role from session cookie
 
-    // Fetch user data from Firestore using UID and role from session cookie
-    const userDocSnap = await adminDb
-      .collection("users")
-      .where("uid", "==", uid)
-      .where("role", "==", role)
-      .limit(1)
-      .get();
+    let cookie = sessionCookie;
+    if (!cookie) {
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        cookie = cookieStore.get("session")?.value;
+      } catch (e) {
+        // Not in server request context
+      }
+    }
 
-    if (userDocSnap.empty) {
+    if (!cookie) {
       return {
         ok: false,
-        message: "User not found in database for this role.",
+        message: "No session cookie found. Please log in.",
         user: null,
       };
     }
-    let userData = userDocSnap.docs[0].data();
+
+    // Verify the session cookie with fallback to ID token verification
+    const cleanCookie = typeof cookie === "string"
+      ? decodeURIComponent(cookie).trim().replace(/^["']|["']$/g, "")
+      : cookie;
+
+    let decodedToken: any;
+    try {
+      decodedToken = await adminAuth.verifySessionCookie(cleanCookie, false);
+    } catch (cookieErr: any) {
+      console.warn("verifySessionCookie failed, trying verifyIdToken fallback:", cookieErr?.code, cookieErr?.message);
+      try {
+        decodedToken = await adminAuth.verifyIdToken(cleanCookie, false);
+      } catch (idTokenErr: any) {
+        console.error("Both verifySessionCookie and verifyIdToken failed:", {
+          sessionErr: cookieErr?.message,
+          sessionCode: cookieErr?.code,
+          idErr: idTokenErr?.message,
+          idCode: idTokenErr?.code,
+          cookieLength: cleanCookie?.length,
+        });
+        return {
+          ok: false,
+          message: `Invalid or expired session cookie (${cookieErr?.code || "AUTH_ERROR"}): ${cookieErr?.message || "Verification failed"}`,
+          user: null,
+        };
+      }
+    }
+
+    const uid = decodedToken.uid;
+    const tokenRole = decodedToken.role;
+
+    // Disallow if token explicitly belongs to another role
+    if (tokenRole && tokenRole !== "user") {
+      return {
+        ok: false,
+        message: `Unauthorized role for user dashboard. Account has role '${tokenRole}'.`,
+        user: null,
+      };
+    }
+
+    // Fetch user data from Firestore using UID
+    let userDocSnap = await adminDb
+      .collection("users")
+      .where("uid", "==", uid)
+      .limit(1)
+      .get();
+
+    let userData: any = null;
+    let docRef: any = null;
+    if (!userDocSnap.empty) {
+      docRef = userDocSnap.docs[0].ref;
+      userData = userDocSnap.docs[0].data();
+    } else {
+      // Fallback: Check if document ID is uid
+      const directDoc = await adminDb.collection("users").doc(uid).get();
+      if (directDoc.exists) {
+        docRef = directDoc.ref;
+        userData = directDoc.data();
+      } else if (decodedToken.email) {
+        const emailSnap = await adminDb
+          .collection("users")
+          .where("emailAddress", "==", decodedToken.email)
+          .limit(1)
+          .get();
+        if (!emailSnap.empty) {
+          docRef = emailSnap.docs[0].ref;
+          userData = emailSnap.docs[0].data();
+          try {
+            await docRef.update({ uid });
+          } catch (e) {}
+        }
+      }
+    }
+
+    if (!userData) {
+      return {
+        ok: false,
+        message: "User not found in database for this account.",
+        user: null,
+      };
+    }
+
+    // Verify user role
+    const userRole = userData.role || "user";
+    if (userRole !== "user") {
+      return {
+        ok: false,
+        message: "Account is registered as an organisation, not a user.",
+        user: null,
+      };
+    }
+
+    // Backfill custom claims in auth if not yet present
+    if (!tokenRole || tokenRole !== "user") {
+      try {
+        await adminAuth.setCustomUserClaims(uid, { role: "user" });
+      } catch (claimErr) {
+        // Non-blocking
+      }
+    }
 
     // Convert Firestore Timestamp fields to ISO strings
-    if (userData.createdAt && userData.createdAt.toDate) {
-      userData.createdAt = userData.createdAt.toDate().toISOString();
+    if (userData.createdAt) {
+      if (userData.createdAt.toDate && typeof userData.createdAt.toDate === "function") {
+        userData.createdAt = userData.createdAt.toDate().toISOString();
+      } else if (typeof userData.createdAt === "object" && userData.createdAt._seconds) {
+        userData.createdAt = new Date(userData.createdAt._seconds * 1000).toISOString();
+      }
     }
     // Convert apiKeys array timestamps
     if (Array.isArray(userData.apiKeys)) {
-      userData.apiKeys = userData.apiKeys.map((key: any) => ({
-        ...key,
-        createdAt:
-          key.createdAt && key.createdAt.toDate
-            ? key.createdAt.toDate().toISOString()
-            : key.createdAt,
-      }));
+      userData.apiKeys = userData.apiKeys.map((key: any) => {
+        let keyDate = key.createdAt;
+        if (keyDate) {
+          if (keyDate.toDate && typeof keyDate.toDate === "function") {
+            keyDate = keyDate.toDate().toISOString();
+          } else if (typeof keyDate === "object" && keyDate._seconds) {
+            keyDate = new Date(keyDate._seconds * 1000).toISOString();
+          }
+        }
+        return {
+          ...key,
+          createdAt: keyDate || null,
+        };
+      });
     }
+
+    // Sanitize to plain object
+    userData = JSON.parse(JSON.stringify(userData));
 
     return {
       ok: true,
@@ -797,7 +905,58 @@ export async function getRoleFromSessionCookie(
       sessionCookie,
       true
     );
-    const role = decodedToken.role;
+    let role = decodedToken.role;
+
+    if (!role) {
+      const adminDb = adminApp.firestore();
+      // Check in users collection
+      let userSnap = await adminDb
+        .collection("users")
+        .where("uid", "==", decodedToken.uid)
+        .limit(1)
+        .get();
+      if (!userSnap.empty) {
+        role = userSnap.docs[0].data().role || "user";
+      } else {
+        const directUser = await adminDb
+          .collection("users")
+          .doc(decodedToken.uid)
+          .get();
+        if (directUser.exists) {
+          role = directUser.data()?.role || "user";
+        }
+      }
+
+      // If not in users, check organisations collection
+      if (!role) {
+        let orgSnap = await adminDb
+          .collection("organisations")
+          .where("uid", "==", decodedToken.uid)
+          .limit(1)
+          .get();
+        if (!orgSnap.empty) {
+          role = orgSnap.docs[0].data().role || "organisation";
+        } else {
+          const directOrg = await adminDb
+            .collection("organisations")
+            .doc(decodedToken.uid)
+            .get();
+          if (directOrg.exists) {
+            role = directOrg.data()?.role || "organisation";
+          }
+        }
+      }
+
+      // Backfill claim if resolved
+      if (role) {
+        try {
+          await adminAuth.setCustomUserClaims(decodedToken.uid, { role });
+        } catch (e) {
+          // Non-blocking
+        }
+      }
+    }
+
     if (!role) {
       return { ok: false, message: "Role not found in session cookie." };
     }
@@ -809,3 +968,4 @@ export async function getRoleFromSessionCookie(
     };
   }
 }
+

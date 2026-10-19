@@ -14,9 +14,9 @@ const ApiKeyComp: React.FC<{ organisationUid?: string }> = ({
   const handleCreated = () => setRefresh((r) => !r);
 
   return (
-    <div className="bg-white p-4 sm:p-8 rounded-lg border border-blue-100 shadow-sm w-full h-full">
+    <div className="bg-white dark:bg-slate-900 p-4 sm:p-8 rounded-lg border border-blue-100 dark:border-slate-800 shadow-sm w-full h-full transition-colors">
       <ToastContainer />
-      <h2 className="text-xl font-bold text-blue-700 mb-4">
+      <h2 className="text-xl font-bold text-blue-700 dark:text-cyan-400 mb-4 transition-colors">
         API Key Management
       </h2>
       <CreateApiKeys

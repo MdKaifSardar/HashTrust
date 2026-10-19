@@ -1,6 +1,44 @@
 @import "tailwindcss";
 
-/* More random, organic, and responsive home gradient */
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0fdfa;
+  --accent-foreground: #0f766e;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #030712;
+  --foreground: #f8fafc;
+  --card: #0b1324;
+  --card-foreground: #f8fafc;
+  --popover: #0b1324;
+  --popover-foreground: #f8fafc;
+  --border: #1e293b;
+  --input: #1e293b;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #0e2b3d;
+  --accent-foreground: #38bdf8;
+  color-scheme: dark;
+}
+
+/* Light home gradient */
 .bg-home-gradient {
   background:
     radial-gradient(ellipse 40% 28% at 18% 32%, #bae6fd 0%, #e0f2fe 70%, transparent 100%),
@@ -11,6 +49,17 @@
     radial-gradient(ellipse 14% 18% at 55% 55%, #a5f3fc 0%, #bae6fd 60%, transparent 100%),
     radial-gradient(ellipse 12% 16% at 40% 60%, #f0fdfa 0%, #e0f2fe 60%, transparent 100%),
     linear-gradient(120deg, #e0f2fe 0%, #f0fdfa 100%);
+}
+
+/* Dark home gradient with deep cyber glows */
+.dark .bg-home-gradient {
+  background:
+    radial-gradient(ellipse 40% 30% at 18% 32%, rgba(14, 116, 144, 0.3) 0%, transparent 75%),
+    radial-gradient(ellipse 38% 42% at 75% 12%, rgba(3, 105, 161, 0.25) 0%, transparent 65%),
+    radial-gradient(ellipse 32% 52% at 85% 85%, rgba(2, 132, 199, 0.25) 0%, transparent 70%),
+    radial-gradient(ellipse 25% 38% at 30% 80%, rgba(13, 148, 136, 0.2) 0%, transparent 80%),
+    radial-gradient(ellipse 20% 24% at 60% 60%, rgba(14, 116, 144, 0.2) 0%, transparent 80%),
+    linear-gradient(135deg, #030712 0%, #070d1e 50%, #030712 100%);
 }
 
 /* Responsive adjustments for blobs on small screens */
@@ -25,8 +74,28 @@
       radial-gradient(ellipse 20% 22% at 50% 60%, #a5f3fc 0%, #bae6fd 60%, transparent 100%),
       linear-gradient(120deg, #e0f2fe 0%, #f0fdfa 100%);
   }
+
+  .dark .bg-home-gradient {
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 20%, rgba(14, 116, 144, 0.3) 0%, transparent 75%),
+      radial-gradient(ellipse 50% 30% at 80% 25%, rgba(3, 105, 161, 0.25) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 60% at 70% 90%, rgba(2, 132, 199, 0.25) 0%, transparent 70%),
+      radial-gradient(ellipse 35% 45% at 20% 90%, rgba(13, 148, 136, 0.2) 0%, transparent 80%),
+      linear-gradient(135deg, #030712 0%, #070d1e 50%, #030712 100%);
+  }
 }
 
 .bg-auth-gradient {
-  background: linear-gradient(120deg, #e0f2fe 0%, #bae6fd 40%, #a5f3fc 80%, #7dd3fc 100%);
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 25%, #bae6fd 0%, #e0f2fe 70%, transparent 100%),
+    radial-gradient(ellipse 45% 50% at 80% 75%, #a5f3fc 0%, #e0f2fe 70%, transparent 100%),
+    linear-gradient(120deg, #e0f2fe 0%, #bae6fd 40%, #a5f3fc 80%, #7dd3fc 100%);
+}
+
+.dark .bg-auth-gradient,
+:where(.dark) .bg-auth-gradient {
+  background:
+    radial-gradient(ellipse 50% 45% at 20% 25%, rgba(14, 116, 144, 0.35) 0%, transparent 75%),
+    radial-gradient(ellipse 45% 50% at 80% 75%, rgba(3, 105, 161, 0.3) 0%, transparent 70%),
+    linear-gradient(135deg, #030712 0%, #070d1e 50%, #030712 100%) !important;
 }

@@ -4,14 +4,14 @@ import { SERVICES_CARDS } from "@/utils/data/HomePage/Services";
 import { FiSearch, FiLink, FiShield, FiZap } from "react-icons/fi";
 
 const ICONS: Record<string, React.ReactNode> = {
-  FiSearch: <FiSearch size={36} className="mb-4 text-blue-700" />,
-  FiLink: <FiLink size={36} className="mb-4 text-blue-700" />,
-  FiShield: <FiShield size={36} className="mb-4 text-blue-700" />,
-  FiZap: <FiZap size={36} className="mb-4 text-blue-700" />,
+  FiSearch: <FiSearch size={36} className="mb-4 text-blue-700 dark:text-cyan-400 transition-colors" />,
+  FiLink: <FiLink size={36} className="mb-4 text-blue-700 dark:text-cyan-400 transition-colors" />,
+  FiShield: <FiShield size={36} className="mb-4 text-blue-700 dark:text-cyan-400 transition-colors" />,
+  FiZap: <FiZap size={36} className="mb-4 text-blue-700 dark:text-cyan-400 transition-colors" />,
 };
 
 const boxStyle =
-  "bg-gradient-to-br from-blue-50 via-cyan-50 to-emerald-100 rounded-2xl shadow-lg p-6 flex flex-col items-center text-center border-0 hover:shadow-2xl transition-all duration-200 cursor-pointer";
+  "bg-gradient-to-br from-blue-50 via-cyan-50 to-emerald-100 dark:from-slate-900/90 dark:via-slate-800/90 dark:to-slate-900/90 dark:border dark:border-slate-800 rounded-2xl shadow-lg dark:shadow-slate-950/40 p-6 flex flex-col items-center text-center transition-all duration-200 cursor-pointer";
 
 const ServicesComponent = () => (
   <section id="services" className="py-16 px-4">
@@ -35,10 +35,10 @@ const ServicesComponent = () => (
           className={boxStyle}
         >
           <div className="text-4xl mb-4">{ICONS[card.icon]}</div>
-          <div className="font-semibold text-lg text-blue-700 mb-2 font-sans">
+          <div className="font-semibold text-lg text-blue-700 dark:text-cyan-300 mb-2 font-sans transition-colors">
             {card.title}
           </div>
-          <div className="text-gray-600 text-sm font-sans">
+          <div className="text-gray-600 dark:text-slate-400 text-sm font-sans transition-colors">
             {card.description}
           </div>
         </motion.div>

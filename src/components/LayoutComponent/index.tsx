@@ -20,7 +20,10 @@ export default function LayoutComponent({
   // Only use session cookie for authentication state
   const hasSessionCookie = () =>
     typeof document !== "undefined" &&
-    document.cookie.split("; ").some((row) => row.startsWith("session="));
+    document.cookie
+      .split(";")
+      .map((row) => row.trim())
+      .some((row) => row.startsWith("session="));
 
   useEffect(() => {
     // Block access to /auth/* if session cookie exists

@@ -24,9 +24,9 @@ import {
 } from "../../../redux/features/idUpload/idUploadSlice";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
-const labelClass = "font-semibold text-gray-700";
-const valueClass = "text-gray-800";
-const sectionTitleClass = "font-semibold text-lg mb-2 text-blue-700";
+const labelClass = "font-semibold text-gray-700 dark:text-slate-300";
+const valueClass = "text-gray-800 dark:text-slate-100";
+const sectionTitleClass = "font-semibold text-lg mb-2 text-blue-700 dark:text-cyan-400";
 
 const ReviewDataComp: React.FC = () => {
   const dispatch = useDispatch();
@@ -101,13 +101,14 @@ const ReviewDataComp: React.FC = () => {
       );
       setShowModal(false);
       if (result.sessionCookie) {
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
         document.cookie = `session=${result.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
-        }; SameSite=Strict; Secure`;
+        }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
         toast.success(result.message || "Sign up successful!");
         setTimeout(() => {
-          router.push("/pages/user/dashboard");
-        }, 1200);
+          window.location.href = "/pages/user/dashboard";
+        }, 1000);
       } else if (result.message) {
         toast.error(result.message);
       } else {
@@ -129,24 +130,24 @@ const ReviewDataComp: React.FC = () => {
           <button
             type="button"
             onClick={handlePrev}
-            className="flex items-center justify-center w-12 h-12 rounded-full font-semibold bg-gray-200 text-blue-700 hover:bg-gray-300"
+            className="flex items-center justify-center w-12 h-12 rounded-full font-semibold bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700 transition"
           >
             <FiChevronLeft size={28} />
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex items-center justify-center w-32 h-12 rounded-full font-semibold bg-green-600 text-white hover:bg-green-700 text-base"
+            className="flex items-center justify-center w-32 h-12 rounded-full font-semibold bg-green-600 text-white hover:bg-green-700 text-base shadow-lg transition"
           >
             Submit
           </button>
         </div>
 
         <div className="sm:p-0 p-4 w-full flex flex-col justify-center items-center">
-          <h2 className="text-2xl font-bold mb-2 text-blue-700 text-center sm:text-left">
+          <h2 className="text-2xl font-bold mb-2 text-blue-700 dark:text-slate-100 text-center sm:text-left transition-colors">
             Review Your Data
           </h2>
-          <div className="w-full max-w-4xl bg-white rounded-xl shadow border border-blue-100 flex flex-col sm:flex-row gap-8 sm:gap-12 px-4 sm:px-8 py-4 sm:py-8 ">
+          <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-xl shadow border border-blue-100 dark:border-slate-800 flex flex-col sm:flex-row gap-8 sm:gap-12 px-4 sm:px-8 py-4 sm:py-8 transition-colors">
             {/* Left: Personal Info & Address */}
             <div className="w-full flex flex-col gap-6">
               <div>
@@ -230,7 +231,7 @@ const ReviewDataComp: React.FC = () => {
                     Password and Email Address
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono select-all text-gray-700">
+                    <span className="font-mono select-all text-gray-700 dark:text-slate-300">
                       Password:{" "}
                       {showPassword
                         ? userData.password
@@ -238,13 +239,13 @@ const ReviewDataComp: React.FC = () => {
                     </span>
                     <button
                       type="button"
-                      className="text-blue-600 underline text-sm"
+                      className="text-blue-600 dark:text-cyan-400 underline text-sm"
                       onClick={() => setShowPassword((v) => !v)}
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
-                  <div className="mt-2 text-gray-700 text-sm">
+                  <div className="mt-2 text-gray-700 dark:text-slate-300 text-sm">
                     <span className={labelClass}>Email:</span>{" "}
                     <span className={valueClass}>
                       {userData.email || (
@@ -261,33 +262,33 @@ const ReviewDataComp: React.FC = () => {
                 <h3 className={sectionTitleClass}>Images</h3>
                 <div className="flex gap-8 justify-center">
                   <div className="flex flex-col items-center">
-                    <span className="text-sm text-gray-600 mb-1">
+                    <span className="text-sm text-gray-600 dark:text-slate-400 mb-1">
                       ID Card Face
                     </span>
                     {idFaceImage ? (
                       <img
                         src={idFaceImage}
                         alt="ID Face"
-                        className="w-24 h-24 object-cover rounded border"
+                        className="w-24 h-24 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
                       />
                     ) : (
-                      <div className="w-24 h-24 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+                      <div className="w-24 h-24 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
                         No Image
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col items-center">
-                    <span className="text-sm text-gray-600 mb-1">
+                    <span className="text-sm text-gray-600 dark:text-slate-400 mb-1">
                       Latest User Photo
                     </span>
                     {latestUserImage ? (
                       <img
                         src={latestUserImage}
                         alt="User"
-                        className="w-24 h-24 object-cover rounded border"
+                        className="w-24 h-24 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
                       />
                     ) : (
-                      <div className="w-24 h-24 bg-gray-100 rounded border flex items-center justify-center text-gray-400">
+                      <div className="w-24 h-24 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
                         No Image
                       </div>
                     )}
@@ -300,7 +301,7 @@ const ReviewDataComp: React.FC = () => {
                   <div className="flex flex-col gap-2">
                     {/* Face Liveness */}
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-700 text-base">
+                      <span className="font-semibold text-gray-700 dark:text-slate-300 text-base">
                         Face Liveness:
                       </span>
                       <span
@@ -308,8 +309,8 @@ const ReviewDataComp: React.FC = () => {
                           faceLiveness === null
                             ? "text-gray-500"
                             : faceLiveness
-                            ? "text-green-600"
-                            : "text-red-600"
+                            ? "text-green-600 dark:text-emerald-400"
+                            : "text-red-600 dark:text-rose-400"
                         }`}
                       >
                         {faceLiveness === null
@@ -319,14 +320,14 @@ const ReviewDataComp: React.FC = () => {
                           : "NOT LIVE"}
                       </span>
                       {faceLivenessScore !== null && (
-                        <span className="text-base font-semibold text-green-600">
+                        <span className="text-base font-semibold text-green-600 dark:text-emerald-400">
                           (Score: {faceLivenessScore}/10)
                         </span>
                       )}
                     </div>
                     {/* Face Similarity */}
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-700 text-base">
+                      <span className="font-semibold text-gray-700 dark:text-slate-300 text-base">
                         Face Similarity:
                       </span>
                       <span
@@ -334,8 +335,8 @@ const ReviewDataComp: React.FC = () => {
                           similarityScore === null
                             ? "text-gray-500"
                             : isMatch
-                            ? "text-green-600"
-                            : "text-red-600"
+                            ? "text-green-600 dark:text-emerald-400"
+                            : "text-red-600 dark:text-rose-400"
                         }`}
                       >
                         {similarityScore === null

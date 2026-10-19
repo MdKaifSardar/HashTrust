@@ -17,22 +17,7 @@ import {
 } from "firebase/firestore";
 import { firebaseApp } from "../database/firebase";
 
-let adminInitialized = false;
-
-function getOrInitAdminApp() {
-  if (typeof window !== "undefined") return; // Never run admin SDK on client
-  if (!adminInitialized && !admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      }),
-    });
-    adminInitialized = true;
-  }
-  return admin;
-}
+import { getOrInitAdminApp } from "@/lib/database/AdminApp";
 
 export async function createOrganisation({
   orgName,
@@ -171,27 +156,32 @@ export async function loginOrganisation({
     const firebaseUser = userCredential.user;
     let idToken: string | undefined;
     try {
-      idToken = await firebaseUser.getIdToken();
-      // Set custom claim for role
       const adminApp = getOrInitAdminApp();
       if (adminApp) {
         const adminAuth = adminApp.auth();
         await adminAuth.setCustomUserClaims(firebaseUser.uid, { role });
       }
+      idToken = await firebaseUser.getIdToken(true);
     } catch (err: any) {
       return { ok: false, message: "Failed to get authentication token." };
     }
     const db = getFirestore(firebaseApp);
     const q = query(
       collection(db, "organisations"),
-      where("email", "==", email),
-      where("role", "==", role)
+      where("email", "==", email)
     );
     const orgSnap = await getDocs(q);
     if (orgSnap.empty) {
       return {
         ok: false,
-        message: "Organisation with this role not found in database.",
+        message: "Organisation with this email not found in database.",
+      };
+    }
+    const orgData = orgSnap.docs[0].data();
+    if (orgData.role && orgData.role !== role) {
+      return {
+        ok: false,
+        message: "Account not registered as an organisation.",
       };
     }
 
@@ -205,10 +195,6 @@ export async function loginOrganisation({
     }
     const adminAuth = adminApp.auth();
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    // Re-fetch ID token to ensure custom claims are present
-    if (idToken) {
-      idToken = await firebaseUser.getIdToken(true);
-    }
     const sessionCookie = await adminAuth.createSessionCookie(idToken!, {
       expiresIn,
     });
@@ -223,7 +209,7 @@ export async function loginOrganisation({
 }
 
 export async function authenticateOrgWithSessionCookie(
-  sessionCookie: string
+  sessionCookie?: string
 ): Promise<{ ok: boolean; organisation?: any; message?: string }> {
   try {
     getOrInitAdminApp(); // <-- Ensure Admin SDK is initialized at the start
@@ -233,38 +219,135 @@ export async function authenticateOrgWithSessionCookie(
     }
     const adminAuth = adminApp.auth();
     const adminDb = adminApp.firestore();
-    // Verify the session cookie
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-    const uid = decodedToken.uid;
-    const role = decodedToken.role; // <-- get role from session cookie
 
-    // Fetch organisation data from Firestore using UID and role from session cookie
-    const orgDocSnap = await adminDb
+    let cookie = sessionCookie;
+    if (!cookie) {
+      try {
+        const { cookies } = await import("next/headers");
+        const cookieStore = await cookies();
+        cookie = cookieStore.get("session")?.value;
+      } catch (e) {
+        // Not in server request context
+      }
+    }
+
+    if (!cookie) {
+      return { ok: false, message: "No session cookie found. Please log in." };
+    }
+
+    // Verify the session cookie with fallback to ID token verification
+    const cleanCookie = typeof cookie === "string"
+      ? decodeURIComponent(cookie).trim().replace(/^["']|["']$/g, "")
+      : cookie;
+
+    let decodedToken: any;
+    try {
+      decodedToken = await adminAuth.verifySessionCookie(cleanCookie, false);
+    } catch (cookieErr: any) {
+      console.warn("verifySessionCookie failed, trying verifyIdToken fallback:", cookieErr?.code, cookieErr?.message);
+      try {
+        decodedToken = await adminAuth.verifyIdToken(cleanCookie, false);
+      } catch (idTokenErr: any) {
+        console.error("Both verifySessionCookie and verifyIdToken failed:", {
+          sessionErr: cookieErr?.message,
+          sessionCode: cookieErr?.code,
+          idErr: idTokenErr?.message,
+          idCode: idTokenErr?.code,
+          cookieLength: cleanCookie?.length,
+        });
+        return {
+          ok: false,
+          message: `Invalid or expired session cookie (${cookieErr?.code || "AUTH_ERROR"}): ${cookieErr?.message || "Verification failed"}`,
+        };
+      }
+    }
+
+    const uid = decodedToken.uid;
+    const tokenRole = decodedToken.role;
+
+    if (tokenRole && tokenRole !== "organisation") {
+      return { ok: false, message: `Access denied. Account has role '${tokenRole}', not 'organisation'.` };
+    }
+
+    // Fetch organisation data from Firestore using UID
+    let orgDocSnap = await adminDb
       .collection("organisations")
       .where("uid", "==", uid)
-      .where("role", "==", role)
       .limit(1)
       .get();
 
-    if (orgDocSnap.empty) {
-      return { ok: false, message: "Organisation not found in database for this role." };
+    let organisation: any = null;
+    let docRef: any = null;
+    if (!orgDocSnap.empty) {
+      docRef = orgDocSnap.docs[0].ref;
+      organisation = orgDocSnap.docs[0].data();
+    } else {
+      const directDoc = await adminDb.collection("organisations").doc(uid).get();
+      if (directDoc.exists) {
+        docRef = directDoc.ref;
+        organisation = directDoc.data();
+      } else if (decodedToken.email) {
+        const emailSnap = await adminDb
+          .collection("organisations")
+          .where("email", "==", decodedToken.email)
+          .limit(1)
+          .get();
+        if (!emailSnap.empty) {
+          docRef = emailSnap.docs[0].ref;
+          organisation = emailSnap.docs[0].data();
+          try {
+            await docRef.update({ uid });
+          } catch (e) {}
+        }
+      }
     }
-    let organisation = orgDocSnap.docs[0].data();
+
+    if (!organisation) {
+      return { ok: false, message: "Organisation not found in database for this account." };
+    }
+
+    const orgRole = organisation.role || "organisation";
+    if (orgRole !== "organisation") {
+      return { ok: false, message: "Account is registered as a user, not an organisation." };
+    }
+
+    // Backfill custom claims in auth if not yet present
+    if (!tokenRole || tokenRole !== "organisation") {
+      try {
+        await adminAuth.setCustomUserClaims(uid, { role: "organisation" });
+      } catch (e) {
+        // Non-blocking
+      }
+    }
 
     // Convert Firestore Timestamp fields to ISO strings
-    if (organisation.createdAt && organisation.createdAt.toDate) {
-      organisation.createdAt = organisation.createdAt.toDate().toISOString();
+    if (organisation.createdAt) {
+      if (organisation.createdAt.toDate && typeof organisation.createdAt.toDate === "function") {
+        organisation.createdAt = organisation.createdAt.toDate().toISOString();
+      } else if (typeof organisation.createdAt === "object" && organisation.createdAt._seconds) {
+        organisation.createdAt = new Date(organisation.createdAt._seconds * 1000).toISOString();
+      }
     }
     // Convert apiKeys array timestamps
     if (Array.isArray(organisation.apiKeys)) {
-      organisation.apiKeys = organisation.apiKeys.map((key: any) => ({
-        ...key,
-        createdAt:
-          key.createdAt && key.createdAt.toDate
-            ? key.createdAt.toDate().toISOString()
-            : key.createdAt,
-      }));
+      organisation.apiKeys = organisation.apiKeys.map((key: any) => {
+        let keyDate = key.createdAt;
+        if (keyDate) {
+          if (keyDate.toDate && typeof keyDate.toDate === "function") {
+            keyDate = keyDate.toDate().toISOString();
+          } else if (typeof keyDate === "object" && keyDate._seconds) {
+            keyDate = new Date(keyDate._seconds * 1000).toISOString();
+          }
+        }
+        return {
+          ...key,
+          createdAt: keyDate || null,
+        };
+      });
     }
+
+    // Sanitize to plain object for server action return
+    organisation = JSON.parse(JSON.stringify(organisation));
 
     return {
       ok: true,
@@ -275,4 +358,4 @@ export async function authenticateOrgWithSessionCookie(
     let errorMsg = err?.message || "Authentication failed.";
     return { ok: false, message: errorMsg };
   }
-}
+}

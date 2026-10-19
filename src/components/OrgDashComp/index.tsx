@@ -12,35 +12,37 @@ import ApiKeyDoc from "./_components/ApiKeyDoc";
 const OrgDashboardComp: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [organisation, setOrganisation] = useState<any>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [selected, setSelected] = useState("Details");
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const verifyOrg = async () => {
       setLoading(true);
+      setAuthError(null);
       try {
-        // Get session cookie from browser
+        // Get session cookie from browser if available
         const sessionCookie = document.cookie
-          .split("; ")
+          .split(";")
+          .map((row) => row.trim())
           .find((row) => row.startsWith("session="))
-          ?.split("=")[1];
-        if (!sessionCookie) {
-          toast.error("Not authenticated. Please log in.");
-          setOrganisation(null);
-          setLoading(false);
-          return;
-        }
-        // Use the org.actions function directly
+          ?.slice("session=".length);
+
+        // Server action will check sessionCookie or fallback to HTTP headers cookies()
         const orgRes = await authenticateOrgWithSessionCookie(sessionCookie);
         if (orgRes.ok && orgRes.organisation) {
           setOrganisation(orgRes.organisation);
         } else {
-          toast.error(orgRes.message || "Failed to fetch organisation.");
           setOrganisation(null);
+          const errorMsg = orgRes.message || "Failed to fetch organisation details.";
+          setAuthError(errorMsg);
+          toast.error(errorMsg);
         }
       } catch (e: any) {
-        toast.error(e?.message || "Authentication failed.");
+        const errorMsg = e?.message || "Authentication failed.";
         setOrganisation(null);
+        setAuthError(errorMsg);
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -61,7 +63,7 @@ const OrgDashboardComp: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
         <Loader />
       </div>
     );
@@ -69,22 +71,28 @@ const OrgDashboardComp: React.FC = () => {
 
   if (!organisation) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl text-red-600 font-semibold mb-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors p-4">
+        <ToastContainer />
+        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-2">
           Not authenticated
         </div>
-        <div className="text-gray-600 mb-2">
+        {authError && (
+          <div className="text-xs sm:text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900 rounded-lg px-4 py-2 mb-4 max-w-md text-center font-mono">
+            {authError}
+          </div>
+        )}
+        <div className="text-gray-600 dark:text-slate-300 mb-2">
           Please{" "}
           <a
             href="/pages/auth/sign-up/organisation"
-            className="text-blue-600 underline font-semibold"
+            className="text-blue-600 dark:text-cyan-400 underline font-semibold"
           >
             sign up
           </a>{" "}
           or{" "}
           <a
             href="/pages/auth/login/organisation"
-            className="text-blue-600 underline font-semibold"
+            className="text-blue-600 dark:text-cyan-400 underline font-semibold"
           >
             log in
           </a>{" "}
@@ -95,7 +103,7 @@ const OrgDashboardComp: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 relative flex">
+    <div className="min-h-screen w-full bg-gray-50 dark:bg-slate-950 relative flex transition-colors">
       <ToastContainer />
       {/* Sidebar is now handled inside OrgSideMenuComp */}
       <OrgSideMenuComp
@@ -117,9 +125,9 @@ const OrgDashboardComp: React.FC = () => {
           )}
           {selected === "API Documentation" && <ApiKeyDoc />}
           {selected === "Settings" && (
-            <div className="bg-white p-8 rounded-lg border border-blue-100 shadow-sm w-full h-full flex flex-col justify-center items-center">
-              <h2 className="text-xl font-bold text-blue-700 mb-4">Settings</h2>
-              <div className="text-gray-600">Settings options go here.</div>
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-blue-100 dark:border-slate-800 shadow-sm w-full h-full flex flex-col justify-center items-center transition-colors">
+              <h2 className="text-xl font-bold text-blue-700 dark:text-slate-100 mb-4">Settings</h2>
+              <div className="text-gray-600 dark:text-slate-400">Settings options go here.</div>
             </div>
           )}
         </div>

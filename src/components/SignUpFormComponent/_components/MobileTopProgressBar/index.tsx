@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectCurrentStep } from "@/redux/features/signUpSteps/stepSlice";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // Custom tailless arrow icon
 const TaillessArrowLeft = () => (
@@ -42,17 +43,20 @@ const MobileTopProgressBar: React.FC = () => {
   };
 
   return (
-    <div className="sm:hidden w-full flex flex-col items-center pt-6 pb-2 bg-blue-50 border-b border-blue-100 overflow-x-hidden">
-      <Link
-        href="/"
-        className="mb-4 flex items-center gap-2 font-semibold text-base group relative transition-all duration-150 active:scale-95 px-4 py-2 rounded-full bg-blue-900 text-white shadow hover:bg-blue-800"
-        style={{ userSelect: "none" }}
-      >
-        <span className="text-xl text-white">
-          <TaillessArrowLeft />
-        </span>
-        <span className="text-white">Back to Home</span>
-      </Link>
+    <div className="sm:hidden w-full flex flex-col items-center pt-4 pb-2 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-800 overflow-x-hidden transition-colors">
+      <div className="w-full flex items-center justify-between px-4 mb-3">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-semibold text-sm group relative transition-all duration-150 active:scale-95 px-3 py-1.5 rounded-full bg-blue-900 dark:bg-slate-800 text-white shadow hover:bg-blue-800 dark:hover:bg-slate-700"
+          style={{ userSelect: "none" }}
+        >
+          <span className="text-lg text-white">
+            <TaillessArrowLeft />
+          </span>
+          <span className="text-white">Back to Home</span>
+        </Link>
+        <ThemeToggle />
+      </div>
       {/* Responsive progress bar */}
       <div className="w-full flex items-center justify-center px-2 overflow-x-auto">
         <div className="flex items-center justify-center w-full gap-2">
@@ -67,11 +71,11 @@ const MobileTopProgressBar: React.FC = () => {
               style={{ minWidth: 0 }}
             >
               <div
-                className={`w-7 h-7 flex items-center justify-center rounded-full border-2
+                className={`w-7 h-7 flex items-center justify-center rounded-full border-2 transition-colors
                   ${
                     idx <= currentStep
                       ? "bg-blue-500 border-blue-500 text-white"
-                      : "bg-gray-200 border-gray-300 text-gray-500"
+                      : "bg-gray-200 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-500 dark:text-slate-400"
                   }
                 `}
                 style={{
@@ -86,7 +90,7 @@ const MobileTopProgressBar: React.FC = () => {
               {/* Tooltip for step label */}
               {activeTooltip === idx && (
                 <span
-                  className="absolute z-10 px-2 py-1 rounded bg-blue-700 text-white text-xs font-medium shadow whitespace-nowrap"
+                  className="absolute z-10 px-2 py-1 rounded bg-blue-700 dark:bg-slate-800 text-white text-xs font-medium shadow whitespace-nowrap border border-transparent dark:border-slate-700"
                   style={{
                     left: "50%",
                     transform: "translateX(-50%)",
