@@ -79,9 +79,10 @@ const SideMenu = ({
   const handleDashboardClick = async () => {
     try {
       const sessionCookie = document.cookie
-        .split("; ")
+        .split(";")
+        .map((row) => row.trim())
         .find((row) => row.startsWith("session="))
-        ?.split("=")[1];
+        ?.slice("session=".length);
       if (!sessionCookie) {
         // Show error toast if no session
         if (typeof window !== "undefined") {

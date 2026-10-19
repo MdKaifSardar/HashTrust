@@ -41,7 +41,7 @@ const ApiKeyDoc: React.FC = () => (
     <p className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
       <strong className="text-slate-900 dark:text-slate-100">Endpoint:</strong> <code className="bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded text-blue-600 dark:text-cyan-400 border border-transparent dark:border-slate-700">POST /api/v1/login/user</code>
     </p>
-    <p className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
+    <div className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
       <strong className="text-slate-900 dark:text-slate-100">Required JSON body:</strong>
       <CodeBlock code={`{
   "email": "user@example.com",
@@ -49,22 +49,22 @@ const ApiKeyDoc: React.FC = () => (
   "apiKey": "yourOrganisationApiKey",
   "type": "login"
 }`} />
-    </p>
-    <p className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
+    </div>
+    <div className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
       <strong className="text-slate-900 dark:text-slate-100">Response (success):</strong>
       <CodeBlock code={`{
   "ok": true,
   "message": "Login successful"
 }`} />
-    </p>
-    <p className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
+    </div>
+    <div className="mb-2 text-gray-700 dark:text-slate-300 text-xs sm:text-sm">
       <strong className="text-slate-900 dark:text-slate-100">Response (error):</strong>
       <CodeBlock code={`{
   "ok": false,
   "error": "Invalid API Key.",
   "message": "Invalid API Key."
 }`} />
-    </p>
+    </div>
     <p className="mt-4 text-gray-700 dark:text-slate-400 text-xs sm:text-sm">
       <strong>Note:</strong> The <code>type</code> parameter should be set to <code>"login"</code> for login requests. For other endpoints, use the appropriate type.
     </p>

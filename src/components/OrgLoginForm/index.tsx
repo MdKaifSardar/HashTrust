@@ -18,18 +18,14 @@ const OrgLoginForm = () => {
     const res = await loginOrganisation({ email, password });
     setLoading(false);
     if (res.ok && res.sessionCookie) {
-      document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Strict; Secure`;
+      const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+      document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax${isSecure ? "; Secure" : ""}`;
       toast.success(res.message);
       setTimeout(() => {
-        router.push("/pages/organisation/dashboard");
-      }, 1200);
-    } else if (res.ok) {
-      toast.success(res.message);
-      setTimeout(() => {
-        router.push("/pages/organisation/dashboard");
-      }, 1200);
+        window.location.href = "/pages/organisation/dashboard";
+      }, 1000);
     } else {
-      toast.error(res.message);
+      toast.error(res.message || "Login failed.");
     }
   };
 

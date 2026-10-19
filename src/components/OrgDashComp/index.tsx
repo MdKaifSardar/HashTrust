@@ -12,35 +12,37 @@ import ApiKeyDoc from "./_components/ApiKeyDoc";
 const OrgDashboardComp: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [organisation, setOrganisation] = useState<any>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [selected, setSelected] = useState("Details");
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const verifyOrg = async () => {
       setLoading(true);
+      setAuthError(null);
       try {
-        // Get session cookie from browser
+        // Get session cookie from browser if available
         const sessionCookie = document.cookie
-          .split("; ")
+          .split(";")
+          .map((row) => row.trim())
           .find((row) => row.startsWith("session="))
-          ?.split("=")[1];
-        if (!sessionCookie) {
-          toast.error("Not authenticated. Please log in.");
-          setOrganisation(null);
-          setLoading(false);
-          return;
-        }
-        // Use the org.actions function directly
+          ?.slice("session=".length);
+
+        // Server action will check sessionCookie or fallback to HTTP headers cookies()
         const orgRes = await authenticateOrgWithSessionCookie(sessionCookie);
         if (orgRes.ok && orgRes.organisation) {
           setOrganisation(orgRes.organisation);
         } else {
-          toast.error(orgRes.message || "Failed to fetch organisation.");
           setOrganisation(null);
+          const errorMsg = orgRes.message || "Failed to fetch organisation details.";
+          setAuthError(errorMsg);
+          toast.error(errorMsg);
         }
       } catch (e: any) {
-        toast.error(e?.message || "Authentication failed.");
+        const errorMsg = e?.message || "Authentication failed.";
         setOrganisation(null);
+        setAuthError(errorMsg);
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -69,10 +71,16 @@ const OrgDashboardComp: React.FC = () => {
 
   if (!organisation) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
-        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors p-4">
+        <ToastContainer />
+        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-2">
           Not authenticated
         </div>
+        {authError && (
+          <div className="text-xs sm:text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900 rounded-lg px-4 py-2 mb-4 max-w-md text-center font-mono">
+            {authError}
+          </div>
+        )}
         <div className="text-gray-600 dark:text-slate-300 mb-2">
           Please{" "}
           <a

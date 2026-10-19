@@ -8,7 +8,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 // Helper to check for session cookie
 function hasSessionCookie() {
-  return document.cookie.split("; ").some((row) => row.startsWith("session="));
+  return (
+    typeof document !== "undefined" &&
+    document.cookie
+      .split(";")
+      .map((row) => row.trim())
+      .some((row) => row.startsWith("session="))
+  );
 }
 
 const Navbar = ({ onLogoutClick, onSideMenuToggle }: { onLogoutClick?: () => void; onSideMenuToggle?: () => void }) => {
@@ -54,9 +60,10 @@ const Navbar = ({ onLogoutClick, onSideMenuToggle }: { onLogoutClick?: () => voi
   const handleDashboardClick = async () => {
     try {
       const sessionCookie = document.cookie
-        .split("; ")
+        .split(";")
+        .map((row) => row.trim())
         .find((row) => row.startsWith("session="))
-        ?.split("=")[1];
+        ?.slice("session=".length);
       if (!sessionCookie) {
         if (typeof window !== "undefined") {
           const { toast } = await import("react-toastify");

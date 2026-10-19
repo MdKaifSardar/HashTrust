@@ -9,7 +9,8 @@ export default function LoginPage() {
   useEffect(() => {
     // Check for session cookie
     const hasSession = document.cookie
-      .split("; ")
+      .split(";")
+      .map((row) => row.trim())
       .some((row) => row.startsWith("session="));
     if (hasSession) {
       window.location.replace("/");

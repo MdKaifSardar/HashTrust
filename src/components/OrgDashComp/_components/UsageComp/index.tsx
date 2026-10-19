@@ -27,9 +27,10 @@ const UsageComp: React.FC<{ organisationUid?: string }> = ({
     try {
       // Get session cookie from browser
       const sessionCookie = document.cookie
-        .split("; ")
+        .split(";")
+        .map((row) => row.trim())
         .find((row) => row.startsWith("session="))
-        ?.split("=")[1];
+        ?.slice("session=".length);
       if (!sessionCookie) {
         toast.error("Not authenticated.");
         setUsageData([]);

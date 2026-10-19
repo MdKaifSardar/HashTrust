@@ -101,13 +101,14 @@ const ReviewDataComp: React.FC = () => {
       );
       setShowModal(false);
       if (result.sessionCookie) {
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
         document.cookie = `session=${result.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
-        }; SameSite=Strict; Secure`;
+        }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
         toast.success(result.message || "Sign up successful!");
         setTimeout(() => {
-          router.push("/pages/user/dashboard");
-        }, 1200);
+          window.location.href = "/pages/user/dashboard";
+        }, 1000);
       } else if (result.message) {
         toast.error(result.message);
       } else {

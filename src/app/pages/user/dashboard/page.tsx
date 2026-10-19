@@ -7,33 +7,35 @@ import { toast, ToastContainer } from "react-toastify";
 const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyUser = async () => {
       setLoading(true);
+      setAuthError(null);
       try {
-        // Get session cookie from browser
+        // Get session cookie from browser if available
         const sessionCookie = document.cookie
-          .split("; ")
+          .split(";")
+          .map((row) => row.trim())
           .find((row) => row.startsWith("session="))
-          ?.split("=")[1];
-        if (!sessionCookie) {
-          toast.error("You are not signed in. Please sign up or log in.");
-          setLoading(false);
-          setUser(null);
-          return;
-        }
-        // Fetch the user using the session cookie
+          ?.slice("session=".length);
+
+        // Fetch the user using the session cookie or server HTTP cookie fallback
         const userRes = await authenticateUserWithSessionCookie(sessionCookie);
         if (userRes.ok && userRes.user) {
           setUser(userRes.user);
         } else {
-          toast.error(userRes.message || "Failed to fetch user.");
           setUser(null);
+          const errorMsg = userRes.message || "Failed to fetch user details.";
+          setAuthError(errorMsg);
+          toast.error(errorMsg);
         }
       } catch (e: any) {
-        toast.error(e?.message || "Authentication failed.");
+        const errorMsg = e?.message || "Authentication failed.";
         setUser(null);
+        setAuthError(errorMsg);
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -51,10 +53,16 @@ const DashboardPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
-        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors p-4">
+        <ToastContainer />
+        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-2">
           Not authenticated
         </div>
+        {authError && (
+          <div className="text-xs sm:text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900 rounded-lg px-4 py-2 mb-4 max-w-md text-center font-mono">
+            {authError}
+          </div>
+        )}
         <div className="text-gray-600 dark:text-slate-300 mb-2">
           Please{" "}
           <a

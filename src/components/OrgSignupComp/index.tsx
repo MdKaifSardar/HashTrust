@@ -28,7 +28,8 @@ const OrgSignupComp = () => {
       });
       setLoading(false);
       if (res.ok && res.sessionCookie) {
-        document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Strict; Secure`;
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+        document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax${isSecure ? "; Secure" : ""}`;
         setSuccess(res.message || "Organisation account created successfully!");
         toast.success(res.message || "Organisation account created successfully!");
         setTimeout(() => {

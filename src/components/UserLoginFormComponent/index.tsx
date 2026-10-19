@@ -21,13 +21,14 @@ const UserLoginFormComponent: React.FC = () => {
     try {
       const res = await loginUser(form.email, form.password);
       if (res.ok && res.sessionCookie) {
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
         document.cookie = `session=${res.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
-        }; SameSite=Strict; Secure`;
+        }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
         toast.success(res.message || "Login successful!");
         setTimeout(() => {
-          router.push("/pages/user/dashboard");
-        }, 1200);
+          window.location.href = "/pages/user/dashboard";
+        }, 1000);
       } else {
         toast.error(res.message || "Login failed.");
       }
