@@ -65,12 +65,36 @@ export const UploadIDComp: React.FC = () => {
     }
   }, [identityDocumentFile, dispatch, lastUploadedFile]);
 
-  const handleFileSelect = (file: File | null) => {
+  const handleFileSelect = async (file: File | null) => {
     if (extracting || loading) return;
     if (file) {
       if (file.type === "image/jpeg" || file.type === "image/jpg") {
         dispatch(setIdentityDocumentFile(file));
         dispatch(resetUserData());
+
+        // Automatically trigger biometric face extraction on file upload
+        dispatch(setExtracting(true));
+        dispatch(setExtractError(null));
+        dispatch(setFaceImage(undefined));
+
+        const result = await extractFace(file);
+
+        if (result.error) {
+          dispatch(setExtractError(result.error));
+          toast.error(result.error);
+          dispatch(setExtracting(false));
+          return;
+        }
+        if (result.message) toast.success(result.message);
+        if (result.faceUrl) {
+          dispatch(setFaceImage(result.faceUrl));
+          dispatch(resetFaceSimilarityCheck());
+          // Auto-advance to OCR extraction step after brief preview
+          setTimeout(() => {
+            dispatch(setCurrentStep(1));
+          }, 1200);
+        }
+        dispatch(setExtracting(false));
       } else {
         dispatch(setPreviewUrl(undefined));
         dispatch(setIdentityDocumentFile(undefined));
@@ -109,6 +133,9 @@ export const UploadIDComp: React.FC = () => {
     if (result.faceUrl) {
       dispatch(setFaceImage(result.faceUrl));
       dispatch(resetFaceSimilarityCheck());
+      setTimeout(() => {
+        dispatch(setCurrentStep(1));
+      }, 1200);
     }
     dispatch(setExtracting(false));
   };
@@ -198,14 +225,16 @@ export const UploadIDComp: React.FC = () => {
       </div>
 
       {/* Wizard Action Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-end">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-end gap-3">
         <Button
           variant="primary"
           onClick={handleNext}
           disabled={!faceImage}
           rightIcon={<FiArrowRight size={16} />}
+          className="w-full xs:w-auto"
         >
-          Continue to OCR Extraction
+          <span className="inline sm:hidden">Continue</span>
+          <span className="hidden sm:inline">Continue to OCR Extraction</span>
         </Button>
       </div>
     </div>

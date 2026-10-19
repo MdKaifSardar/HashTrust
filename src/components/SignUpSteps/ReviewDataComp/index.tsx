@@ -238,12 +238,13 @@ export const ReviewDataComp: React.FC = () => {
       </div>
 
       {/* Action Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={handlePrev}
           disabled={submitting}
           leftIcon={<FiArrowLeft size={16} />}
+          className="w-full xs:w-auto"
         >
           Back
         </Button>
@@ -253,8 +254,10 @@ export const ReviewDataComp: React.FC = () => {
           onClick={handleSubmit}
           isLoading={submitting}
           rightIcon={<FiCheckCircle size={18} />}
+          className="w-full xs:w-auto"
         >
-          Confirm & Mint Identity Proof
+          <span className="inline sm:hidden">Confirm & Mint</span>
+          <span className="hidden sm:inline">Confirm & Mint Identity Proof</span>
         </Button>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   selectIdentityDocumentFile,
@@ -30,6 +30,8 @@ export const DataExtractDocComp: React.FC = () => {
   const currentStep = useSelector(selectCurrentStep);
 
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const autoTriggeredRef = useRef(false);
 
   const hasExtractedData =
     !!userData?.name &&
@@ -52,6 +54,7 @@ export const DataExtractDocComp: React.FC = () => {
       return;
     }
     setLoading(true);
+    setCountdown(null);
     try {
       const data = await extractUserDataWithGemini(identityDocumentFile);
       if (!data || Object.keys(data).length === 0) {
@@ -60,6 +63,8 @@ export const DataExtractDocComp: React.FC = () => {
       } else {
         dispatch(setUserData(data));
         toast.success("User data extracted successfully!");
+        // Initiate brief review countdown before auto-advancing to Biometrics
+        setCountdown(2);
       }
     } catch (err: any) {
       dispatch(resetUserData());
@@ -69,13 +74,40 @@ export const DataExtractDocComp: React.FC = () => {
     }
   };
 
+  // Automatically trigger OCR extraction when landing on this step if not yet extracted
+  useEffect(() => {
+    if (identityDocumentFile && !hasExtractedData && !loading && !autoTriggeredRef.current) {
+      autoTriggeredRef.current = true;
+      handleExtract();
+    }
+  }, [identityDocumentFile, hasExtractedData, loading]);
+
+  // Handle auto-advance countdown
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      dispatch(setCurrentStep(currentStep + 1));
+      return;
+    }
+    const timer = setTimeout(() => {
+      setCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, currentStep, dispatch]);
+
+  const handleCancelCountdown = () => {
+    setCountdown(null);
+  };
+
   const handleNext = () => {
+    setCountdown(null);
     if (hasExtractedData) {
       dispatch(setCurrentStep(currentStep + 1));
     }
   };
 
   const handleBack = () => {
+    setCountdown(null);
     dispatch(setCurrentStep(currentStep - 1));
   };
 
@@ -176,12 +208,30 @@ export const DataExtractDocComp: React.FC = () => {
         </div>
       </div>
 
+      {/* Auto-Advance Feedback Banner */}
+      {countdown !== null && (
+        <div className="mt-6 p-3.5 rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-xs text-sky-800 dark:text-sky-200 flex items-center justify-between shadow-sm animate-pulse">
+          <div className="flex items-center gap-2">
+            <FiCheckCircle size={15} className="text-sky-600 dark:text-sky-400 shrink-0" />
+            <span>Attributes verified! Auto-advancing to Biometrics in <strong>{countdown}s</strong>...</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCancelCountdown}
+            className="text-xs font-semibold text-sky-600 dark:text-sky-300 underline hover:no-underline ml-2 cursor-pointer shrink-0"
+          >
+            Pause
+          </button>
+        </div>
+      )}
+
       {/* Action Navigation Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={handleBack}
           leftIcon={<FiArrowLeft size={16} />}
+          className="w-full xs:w-auto"
         >
           Back
         </Button>
@@ -190,8 +240,10 @@ export const DataExtractDocComp: React.FC = () => {
           onClick={handleNext}
           disabled={!hasExtractedData || loading}
           rightIcon={<FiArrowRight size={16} />}
+          className="w-full xs:w-auto"
         >
-          Continue to Camera Capture
+          <span className="inline sm:hidden">Continue</span>
+          <span className="hidden sm:inline">Continue to Biometrics</span>
         </Button>
       </div>
     </div>

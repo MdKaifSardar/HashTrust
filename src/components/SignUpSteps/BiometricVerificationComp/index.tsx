@@ -95,12 +95,22 @@ export const BiometricVerificationComp: React.FC = () => {
     dispatch(setIdFaceImage(extractedFacePreview ?? null));
   }, [extractedFacePreview, dispatch]);
 
-  // Clean up camera stream on unmount
+  // Auto-start camera when entering this step
   useEffect(() => {
+    if (!userImagePreview && !cameraOn) {
+      startCamera();
+    }
     return () => {
       stopCamera();
     };
   }, []);
+
+  // Sync video element when camera turns on
+  useEffect(() => {
+    if (cameraOn && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [cameraOn]);
 
   const startCamera = async () => {
     if (cameraOn) return;
@@ -109,11 +119,11 @@ export const BiometricVerificationComp: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
       });
+      streamRef.current = stream;
+      setCameraOn(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-      streamRef.current = stream;
-      setCameraOn(true);
     } catch {
       toast.error(
         "Unable to access camera. Please allow camera permissions in your browser and try again."
@@ -265,6 +275,17 @@ export const BiometricVerificationComp: React.FC = () => {
 
   const isBothVerified =
     faceLiveness === true && isMatch === true && (similarityScore ?? 0) >= 80;
+
+  // Auto-advance once both liveness and 1:1 similarity pass
+  useEffect(() => {
+    if (isBothVerified) {
+      const timer = setTimeout(() => {
+        stopCamera();
+        dispatch(setCurrentStep(currentStep + 1));
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [isBothVerified, currentStep, dispatch]);
 
   return (
     <div className="w-full flex flex-col">
@@ -472,12 +493,23 @@ export const BiometricVerificationComp: React.FC = () => {
         </div>
       )}
 
+      {/* Auto-Advance Success Banner */}
+      {isBothVerified && (
+        <div className="mt-6 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 flex items-center justify-between shadow-sm animate-pulse">
+          <div className="flex items-center gap-2">
+            <FiCheckCircle size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>Biometrics verified! Auto-advancing to Credentials...</span>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={handlePrev}
           leftIcon={<FiArrowLeft size={16} />}
+          className="w-full xs:w-auto"
         >
           Back
         </Button>
@@ -486,8 +518,10 @@ export const BiometricVerificationComp: React.FC = () => {
           onClick={handleNext}
           disabled={!isBothVerified}
           rightIcon={<FiArrowRight size={16} />}
+          className="w-full xs:w-auto"
         >
-          Continue to Credentials
+          <span className="inline sm:hidden">Continue</span>
+          <span className="hidden sm:inline">Continue to Credentials</span>
         </Button>
       </div>
     </div>
