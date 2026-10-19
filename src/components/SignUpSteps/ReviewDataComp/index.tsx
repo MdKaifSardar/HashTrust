@@ -97,26 +97,28 @@ export const ReviewDataComp: React.FC = () => {
         "user",
         userData.idNumber || ""
       );
-      setShowModal(false);
+
       if (result.ok && result.sessionCookie) {
         const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
         document.cookie = `session=${result.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
         }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
-        toast.success(result.message || "Identity proof created successfully!");
-        setTimeout(() => {
-          window.location.href = "/pages/user/dashboard";
-        }, 1000);
+        toast.success(result.message || "Identity proof created successfully! Redirecting...");
+        // Immediate 0ms redirect — keep submitting=true so UI remains permanently locked
+        window.location.href = "/pages/user/dashboard";
+        return;
       } else {
+        setShowModal(false);
         const msg = result.message || "Minting failed. Your data is preserved; please retry.";
         setSubmitError(msg);
         toast.error(msg);
+        setSubmitting(false);
       }
     } catch (e: any) {
+      setShowModal(false);
       const msg = "Failed to submit data: " + (e?.message || "Unknown error");
       setSubmitError(msg);
       toast.error(msg);
-    } finally {
       setSubmitting(false);
     }
   };

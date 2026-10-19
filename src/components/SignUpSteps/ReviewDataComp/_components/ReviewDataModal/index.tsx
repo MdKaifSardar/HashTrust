@@ -48,7 +48,7 @@ export const ReviewDataModal: React.FC<ReviewDataModalProps> = ({
             onClick={onConfirm}
             isLoading={submitting}
           >
-            Confirm & Mint
+            {submitting ? "Anchoring on Sepolia..." : "Confirm & Mint"}
           </Button>
         </div>
       </div>
