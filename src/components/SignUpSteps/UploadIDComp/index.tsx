@@ -22,12 +22,13 @@ import {
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { toast } from "react-toastify";
 import { useExtractFaceFromDoc } from "../../../utils/hooks/ExtractFaceFromDoc";
-import Loader from "../../Loader";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiArrowRight, FiFileText, FiCheckCircle } from "react-icons/fi";
 import { resetUserData } from "../../../redux/features/userData/userDataSlice";
 import { resetFaceSimilarityCheck } from "../../../redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
+import Button from "@/components/ui/Button";
+import Dropzone from "@/components/ui/Dropzone";
 
-const UploadIDComp: React.FC = () => {
+export const UploadIDComp: React.FC = () => {
   const dispatch = useDispatch();
   const identityDocumentFile = useSelector(selectIdentityDocumentFile);
   const faceImage = useSelector(selectFaceImage);
@@ -41,7 +42,6 @@ const UploadIDComp: React.FC = () => {
 
   useEffect(() => {
     if (identityDocumentFile) {
-      // Only update preview and clear face image if file changed
       if (
         lastUploadedFile === undefined ||
         (identityDocumentFile && identityDocumentFile !== lastUploadedFile)
@@ -49,7 +49,7 @@ const UploadIDComp: React.FC = () => {
         const reader = new FileReader();
         reader.onload = () => {
           const base64 = reader.result as string;
-          dispatch(setPreviewUrl(base64)); // <-- now it's data:image/... base64
+          dispatch(setPreviewUrl(base64));
         };
         reader.readAsDataURL(identityDocumentFile);
 
@@ -57,37 +57,34 @@ const UploadIDComp: React.FC = () => {
         dispatch(setExtractError(null));
         dispatch(setLastUploadedFile(identityDocumentFile));
       }
-      // Do NOT clear face image if file is the same (e.g., navigating back or remount)
     } else {
       dispatch(setPreviewUrl(undefined));
       dispatch(setLastUploadedFile(undefined));
       dispatch(setFaceImage(undefined));
       dispatch(setExtractError(null));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identityDocumentFile, dispatch, lastUploadedFile]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (file: File | null) => {
     if (extracting || loading) return;
-    const selected = e.target.files?.[0];
-    if (selected) {
-      if (selected.type === "image/jpeg" || selected.type === "image/jpg") {
-        dispatch(setIdentityDocumentFile(selected));
-        dispatch(resetUserData()); // <-- Reset user data on new file upload
-        // All states (face image, error, etc.) will be reset by useEffect above
+    if (file) {
+      if (file.type === "image/jpeg" || file.type === "image/jpg") {
+        dispatch(setIdentityDocumentFile(file));
+        dispatch(resetUserData());
       } else {
         dispatch(setPreviewUrl(undefined));
         dispatch(setIdentityDocumentFile(undefined));
         dispatch(setFaceImage(undefined));
-        dispatch(setExtractError("Only JPEG image files are allowed."));
-        dispatch(resetUserData()); // <-- Also reset user data if invalid file
+        dispatch(setExtractError("Only JPEG/JPG image files are allowed."));
+        dispatch(resetUserData());
+        toast.error("Only JPEG/JPG image files are allowed.");
       }
     } else {
       dispatch(setPreviewUrl(undefined));
       dispatch(setIdentityDocumentFile(undefined));
       dispatch(setFaceImage(undefined));
       dispatch(setExtractError(null));
-      dispatch(resetUserData()); // <-- Also reset user data if no file
+      dispatch(resetUserData());
     }
   };
 
@@ -111,7 +108,7 @@ const UploadIDComp: React.FC = () => {
     if (result.message) toast.success(result.message);
     if (result.faceUrl) {
       dispatch(setFaceImage(result.faceUrl));
-      dispatch(resetFaceSimilarityCheck()); // <-- Reset similarity check when new face extracted
+      dispatch(resetFaceSimilarityCheck());
     }
     dispatch(setExtracting(false));
   };
@@ -120,111 +117,99 @@ const UploadIDComp: React.FC = () => {
     if (!faceImage) return;
     dispatch(setCurrentStep(currentStep + 1));
   };
+
   return (
-    <div className="bg-transparent flex flex-col justify-center items-center w-full min-h-screen relative">
-      {/* Top navigation buttons at top corners */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
-        <button
-          type="button"
-          onClick={() => dispatch(setCurrentStep(currentStep - 1))}
-          disabled={currentStep === 0}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            currentStep === 0
-              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
-              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
-          }`}
-        >
-          <FiChevronLeft size={28} />
-        </button>
-        <button
-          type="button"
+    <div className="w-full flex flex-col">
+      {/* Step Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-100 dark:border-sky-900/40">
+            <FiFileText size={18} />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              Upload Identity Document
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Upload your official Aadhaar card (JPEG/JPG format) for biometric verification.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Upload Dropzone */}
+      <div className="space-y-6">
+        <Dropzone
+          onFileSelect={handleFileSelect}
+          selectedFile={identityDocumentFile}
+          previewUrl={previewUrl}
+          accept="image/jpeg,image/jpg"
+          label="Drop your Aadhaar Card here, or browse"
+          description="High-resolution JPEG or JPG image"
+        />
+
+        {extractError && (
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-xs text-rose-600 dark:text-rose-400 font-medium text-center">
+            {extractError}
+          </div>
+        )}
+
+        {/* Biometric Face Crop Preview */}
+        {faceImage && (
+          <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/40 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                src={faceImage}
+                alt="Extracted Biometric Face"
+                className="w-14 h-14 object-cover rounded-xl border-2 border-emerald-500 shadow-sm"
+              />
+              <div>
+                <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
+                  <FiCheckCircle size={14} /> Biometric Face Extracted
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Ready for liveness and similarity comparison
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExtractFace}
+              isLoading={extracting || loading}
+            >
+              Re-extract
+            </Button>
+          </div>
+        )}
+
+        {/* Extract Button if not yet extracted */}
+        {!faceImage && identityDocumentFile && (
+          <Button
+            variant="primary"
+            fullWidth
+            size="lg"
+            onClick={handleExtractFace}
+            isLoading={extracting || loading}
+          >
+            Extract Biometric Photo from Document
+          </Button>
+        )}
+      </div>
+
+      {/* Wizard Action Footer */}
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-end">
+        <Button
+          variant="primary"
           onClick={handleNext}
           disabled={!faceImage}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            !faceImage
-              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-          }`}
+          rightIcon={<FiArrowRight size={16} />}
         >
-          <FiChevronRight size={28} />
-        </button>
-      </div>
-      <label className="block text-center font-medium mb-2 text-gray-700 dark:text-slate-200 transition-colors">
-        Upload Identity Document (Aadhaar card, JPEG/JPG)
-      </label>
-      <div className="flex items-center gap-4 mb-4">
-        <label
-          className={`flex flex-col items-center px-4 py-6 bg-gray-50 dark:bg-slate-900/80 text-blue-500 dark:text-cyan-400 rounded-lg shadow-lg tracking-wide border border-blue-200 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-800 transition ${
-            extracting || loading ? "opacity-60 cursor-not-allowed" : ""
-          }`}
-        >
-          <svg
-            className="w-8 h-8"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-5 4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
-            />
-          </svg>
-          <span className="mt-2 text-base leading-normal">Select a file</span>
-          <input
-            type="file"
-            accept="image/jpeg,image/jpg"
-            className="hidden"
-            onChange={handleFileChange}
-            disabled={extracting || loading}
-          />
-        </label>
-        {previewUrl &&
-          (identityDocumentFile?.type?.startsWith("image/") ? (
-            <img
-              src={previewUrl}
-              alt="Identity Document Preview"
-              className="w-16 h-16 object-cover rounded border border-gray-300 dark:border-slate-700"
-            />
-          ) : (
-            <span className="text-gray-700 dark:text-slate-300">{previewUrl}</span>
-          ))}
-      </div>
-      {loading && <Loader />}
-      {extractError && <div className="text-red-500 dark:text-red-400 mb-2">{extractError}</div>}
-      {faceImage && (
-        <div className="flex flex-col items-center mt-2">
-          <span className="text-gray-700 dark:text-slate-300 mb-1">Extracted Face Preview:</span>
-          <img
-            src={faceImage}
-            alt="Extracted Face"
-            className="w-24 h-24 object-cover rounded-full border border-gray-300 dark:border-slate-700 shadow-md"
-          />
-        </div>
-      )}
-      {/* Always display extracted face image if available */}
-      <div className="flex gap-3 mb-2">
-        <button
-          type="button"
-          onClick={handleExtractFace}
-          disabled={extracting || loading || !identityDocumentFile}
-          className={`px-6 py-2 rounded shadow transition font-semibold ${
-            extracting || loading || !identityDocumentFile
-              ? "bg-blue-300 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          {faceImage ? "Re-extract" : "Extract"}
-        </button>
-      </div>
-      {/* Add top margin to main content to avoid overlap with buttons */}
-      <div className="mt-14 w-full flex flex-col items-center">
-        {/* ...existing content... */}
+          Continue to OCR Extraction
+        </Button>
       </div>
     </div>
   );
 };
+
 export default UploadIDComp;

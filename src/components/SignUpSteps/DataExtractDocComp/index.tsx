@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -17,9 +18,10 @@ import {
   selectCurrentStep,
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { toast } from "react-toastify";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiFileText, FiCheckCircle, FiCpu } from "react-icons/fi";
+import Button from "@/components/ui/Button";
 
-const DataExtractDocComp: React.FC = () => {
+export const DataExtractDocComp: React.FC = () => {
   const dispatch = useDispatch();
   const identityDocumentFile = useSelector(selectIdentityDocumentFile);
   const previewUrl = useSelector(selectPreviewUrl);
@@ -38,16 +40,11 @@ const DataExtractDocComp: React.FC = () => {
     !!userData?.address?.state &&
     !!userData?.address?.pin;
 
-  // Only reset user data when a new file is uploaded (using lastUploadedFile from Redux)
   useEffect(() => {
-    if (
-      identityDocumentFile &&
-      identityDocumentFile !== lastUploadedFile
-    ) {
+    if (identityDocumentFile && identityDocumentFile !== lastUploadedFile) {
       dispatch(resetUserData());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identityDocumentFile, lastUploadedFile]);
+  }, [identityDocumentFile, lastUploadedFile, dispatch]);
 
   const handleExtract = async () => {
     if (!identityDocumentFile) {
@@ -57,7 +54,6 @@ const DataExtractDocComp: React.FC = () => {
     setLoading(true);
     try {
       const data = await extractUserDataWithGemini(identityDocumentFile);
-
       if (!data || Object.keys(data).length === 0) {
         dispatch(resetUserData());
         toast.error("No data extracted from the document.");
@@ -84,120 +80,119 @@ const DataExtractDocComp: React.FC = () => {
   };
 
   return (
-    <div className="bg-transparent flex flex-col justify-center items-center w-full min-h-screen h-full rounded-lg relative">
-      {/* Top navigation buttons at top corners */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
-        <button
-          type="button"
-          onClick={handleBack}
-          disabled={loading}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            loading
-              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
-              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
-          }`}
-        >
-          <FiChevronLeft size={28} />
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!hasExtractedData || loading}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            !hasExtractedData || loading
-              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-          }`}
-        >
-          <FiChevronRight size={28} />
-        </button>
-      </div>
-
-      <div className="w-full flex flex-col items-center mt-10 sm:mt-0">
-        <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-slate-100 text-center w-full transition-colors">
-          Extracted User Data
-        </h2>
-        <div className="p-4 w-full flex flex-col sm:flex-row items-start justify-center gap-8">
-          {/* Left: Uploaded document preview and extract button */}
-          <div className="w-full sm:w-1/2 flex flex-col items-center">
-            <div className="w-full bg-white dark:bg-slate-900 rounded-lg shadow mb-4 border border-blue-100 dark:border-slate-800 flex flex-col items-center p-[1rem] transition-colors">
-              {/* Uploaded document preview */}
-              {previewUrl && (
-                <div className="w-full flex justify-center mb-4">
-                  <img
-                    src={previewUrl}
-                    alt="Uploaded Document Preview"
-                    className="w-48 h-auto rounded border border-gray-300 dark:border-slate-700"
-                  />
-                </div>
-              )}
-              <div className="flex mb-2 justify-center w-full">
-                <button
-                  type="button"
-                  onClick={handleExtract}
-                  disabled={loading || !identityDocumentFile}
-                  className={`px-6 py-2 rounded shadow font-semibold ${
-                    loading || !identityDocumentFile
-                      ? "bg-blue-300 text-white cursor-not-allowed"
-                      : "bg-blue-500 text-white hover:bg-blue-600"
-                  }`}
-                >
-                  {loading
-                    ? "Extracting..."
-                    : hasExtractedData
-                    ? "Re-extract"
-                    : "Extract Data"}
-                </button>
-              </div>
-              {!loading && !hasExtractedData && (
-                <div className="text-red-500 dark:text-red-400">No data extracted.</div>
-              )}
-            </div>
+    <div className="w-full flex flex-col">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-100 dark:border-sky-900/40">
+            <FiFileText size={18} />
           </div>
-          {/* Right: Extracted data */}
-          <div className="w-full sm:w-1/2 flex flex-col items-center">
-            {hasExtractedData && (
-              <div className="w-full bg-white dark:bg-slate-900 rounded-lg shadow mb-4 border border-blue-100 dark:border-slate-800 flex flex-col justify-center items-center p-[1rem] transition-colors">
-                <h3 className="text-lg font-semibold text-blue-700 dark:text-cyan-400 mb-4 text-center">
-                  User Information
-                </h3>
-                <div className="grid grid-cols-1 gap-3 w-full">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 dark:text-slate-300">Name:</span>
-                    <span className="text-gray-800 dark:text-slate-100">{userData.name}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 dark:text-slate-300">Date of Birth:</span>
-                    <span className="text-gray-800 dark:text-slate-100">{userData.dob}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 dark:text-slate-300">Phone Number:</span>
-                    <span className="text-gray-800 dark:text-slate-100">{userData.phone}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 dark:text-slate-300">Aadhaar Number:</span>
-                    <span className="text-gray-800 dark:text-slate-100">{userData.idNumber}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="font-semibold text-gray-700 dark:text-slate-300 mb-1">Address:</span>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                      <span className="text-gray-600 dark:text-slate-400">PO:</span>
-                      <span className="text-gray-800 dark:text-slate-100">{userData.address.po}</span>
-                      <span className="text-gray-600 dark:text-slate-400">District:</span>
-                      <span className="text-gray-800 dark:text-slate-100">{userData.address.district}</span>
-                      <span className="text-gray-600 dark:text-slate-400">State:</span>
-                      <span className="text-gray-800 dark:text-slate-100">{userData.address.state}</span>
-                      <span className="text-gray-600 dark:text-slate-400">Pin Code:</span>
-                      <span className="text-gray-800 dark:text-slate-100">{userData.address.pin}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              AI Document OCR Extraction
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Our neural OCR parses and validates key attributes from your uploaded ID.
+            </p>
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left: Uploaded Preview & Trigger */}
+        <div className="flex flex-col gap-4">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 flex flex-col items-center">
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Document Preview"
+                className="max-h-52 w-auto object-contain rounded-xl border border-slate-200 dark:border-white/10 shadow-sm"
+              />
+            )}
+            <div className="mt-4 w-full">
+              <Button
+                variant={hasExtractedData ? "outline" : "primary"}
+                fullWidth
+                size="md"
+                onClick={handleExtract}
+                isLoading={loading}
+                leftIcon={<FiCpu size={16} />}
+              >
+                {hasExtractedData ? "Re-run OCR Extraction" : "Extract Document Data"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Extracted Attributes */}
+        <div className="flex flex-col">
+          {hasExtractedData ? (
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-white/10 mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Verified Data Fields
+                </span>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <FiCheckCircle size={14} /> OCR Parsed
+                </span>
+              </div>
+
+              <div className="space-y-3 text-xs sm:text-sm">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 dark:text-slate-400">Full Name</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{userData.name}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 dark:text-slate-400">Date of Birth</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{userData.dob}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 dark:text-slate-400">Phone Number</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{userData.phone}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 dark:text-slate-400">ID / Aadhaar No.</span>
+                  <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{userData.idNumber}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-100 dark:border-white/5">
+                  <span className="text-slate-500 dark:text-slate-400 block mb-1">Address</span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    {userData.address.po}, {userData.address.district}, {userData.address.state} - {userData.address.pin}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full min-h-[220px] rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 p-6 flex flex-col items-center justify-center text-center">
+              <FiCpu size={32} className="text-slate-300 dark:text-slate-600 mb-2" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Awaiting Extraction
+              </p>
+              <p className="text-xs text-slate-400 max-w-xs mt-1">
+                Click &ldquo;Extract Document Data&rdquo; to process your document attributes automatically.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action Navigation Footer */}
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={handleBack}
+          leftIcon={<FiArrowLeft size={16} />}
+        >
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleNext}
+          disabled={!hasExtractedData || loading}
+          rightIcon={<FiArrowRight size={16} />}
+        >
+          Continue to Camera Capture
+        </Button>
       </div>
     </div>
   );

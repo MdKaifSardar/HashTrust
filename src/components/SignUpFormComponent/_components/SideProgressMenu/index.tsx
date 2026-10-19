@@ -1,79 +1,108 @@
-import React, { useState } from "react";
+"use client";
+
+import React from "react";
 import Link from "next/link";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiShield } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { selectCurrentStep } from "@/redux/features/signUpSteps/stepSlice";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const steps = [
-  { label: "ID Document" },
-  { label: "Extract Data" },
-  { label: "User Images" },
-  { label: "Face Similarity" },
-  { label: "Email and Password" },
-  { label: "Review Data" },
+  { label: "ID Document", desc: "Upload official ID" },
+  { label: "Extract Data", desc: "OCR text verification" },
+  { label: "User Images", desc: "Live webcam capture" },
+  { label: "Face Similarity", desc: "Liveness & 1:1 match" },
+  { label: "Credentials", desc: "Email and password" },
+  { label: "Review & Mint", desc: "Smart contract proof" },
 ];
 
-const SideProgressMenu: React.FC = () => {
+export const SideProgressMenu: React.FC = () => {
   const currentStep = useSelector(selectCurrentStep);
-  const [hovered, setHovered] = useState(false);
 
   return (
-    <aside className="hidden sm:flex flex-col items-center justify-between bg-blue-50 dark:bg-slate-900 border-r border-blue-100 dark:border-slate-800 shadow-md rounded-none py-10 px-4 h-screen fixed top-0 left-0 z-20 w-[30%] lg:w-[20%] min-w-[20%] transition-colors">
-      <div className="w-full flex flex-col items-center">
-        <div
-          className="mb-8 flex flex-col items-center group cursor-pointer"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
-          <Link href="/" className="flex items-center justify-center relative">
-            <span
-              className={`transition-all duration-200 text-3xl rounded-full p-2 bg-blue-100 dark:bg-slate-800 hover:bg-blue-200 dark:hover:bg-slate-700 text-blue-700 dark:text-cyan-400 shadow hover:shadow-lg`}
-            >
-              <FiArrowLeft />
-            </span>
-            {hovered && (
-              <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-blue-700 dark:bg-slate-800 text-white text-xs font-semibold px-3 py-1 rounded shadow transition-all duration-200 whitespace-nowrap border border-blue-600 dark:border-slate-700">
-                Back to Home
-              </span>
-            )}
+    <aside className="hidden sm:flex flex-col justify-between bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-white/10 p-6 h-screen fixed top-0 left-0 z-20 w-[30%] lg:w-[22%] min-w-[260px] transition-colors">
+      <div className="w-full flex flex-col">
+        {/* Header with Back button & Brand */}
+        <div className="flex items-center justify-between pb-6 border-b border-slate-200/80 dark:border-white/10 mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+          >
+            <FiArrowLeft size={16} />
+            <span>Back to Home</span>
           </Link>
+          <div className="w-7 h-7 rounded-lg bg-sky-600 dark:bg-sky-500 flex items-center justify-center text-white dark:text-slate-950 shadow-sm">
+            <FiShield size={14} />
+          </div>
         </div>
-        <h3 className="flex items-center text-blue-700 dark:text-slate-100 font-semibold text-xl mb-[1rem] text-center">
-          Sign Up Steps
-        </h3>
-        <ul className="flex flex-col gap-2 w-full">
-          {steps.map((step: { label: string }, idx: number) => (
-            <li key={step.label}>
-              <button
-                type="button"
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-semibold
-                  ${
-                    idx === currentStep
-                      ? "bg-blue-600 text-white shadow"
-                      : "bg-white dark:bg-slate-800/80 text-blue-700 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-slate-700/60"
-                  }
-                  border border-blue-100 dark:border-slate-800`}
-                disabled
+
+        <div className="mb-6">
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+            Onboarding Protocol
+          </span>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+            Identity Verification
+          </h3>
+        </div>
+
+        {/* Vertical Step Timeline */}
+        <div className="flex flex-col gap-1 relative">
+          {steps.map((step, idx) => {
+            const isCompleted = idx < currentStep;
+            const isCurrent = idx === currentStep;
+
+            return (
+              <div
+                key={step.label}
+                className={`flex items-center gap-3.5 p-3 rounded-2xl transition-all duration-200 ${
+                  isCurrent
+                    ? "bg-sky-50/80 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/40 shadow-sm"
+                    : isCompleted
+                    ? "text-slate-700 dark:text-slate-300"
+                    : "text-slate-400 dark:text-slate-600"
+                }`}
               >
-                <span
-                  className={`w-7 h-7 flex items-center justify-center rounded-full border-2
-                    ${
-                      idx === currentStep
-                        ? "bg-white border-blue-600 text-blue-600 font-bold"
-                        : "bg-blue-100 dark:bg-slate-700 border-blue-200 dark:border-slate-600 text-blue-400 dark:text-slate-400"
-                    }`}
+                {/* Step Circle */}
+                <div
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs transition-colors shrink-0 ${
+                    isCompleted
+                      ? "bg-emerald-500 text-white shadow-sm"
+                      : isCurrent
+                      ? "bg-sky-600 text-white shadow-md shadow-sky-600/30"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-400 border border-slate-200 dark:border-white/10"
+                  }`}
                 >
-                  {idx + 1}
-                </span>
-                <span className="text-base">{step.label}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+                  {isCompleted ? <FiCheck size={14} /> : idx + 1}
+                </div>
+
+                {/* Step Label & Subtitle */}
+                <div className="min-w-0">
+                  <p
+                    className={`text-xs font-bold truncate ${
+                      isCurrent
+                        ? "text-sky-900 dark:text-sky-200"
+                        : isCompleted
+                        ? "text-slate-800 dark:text-slate-200"
+                        : "text-slate-400 dark:text-slate-500"
+                    }`}
+                  >
+                    {step.label}
+                  </p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+                    {step.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="pt-6 border-t border-blue-100 dark:border-slate-800 w-full flex items-center justify-center">
+      {/* Bottom theme switch */}
+      <div className="pt-4 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Theme Mode
+        </span>
         <ThemeToggle />
       </div>
     </aside>

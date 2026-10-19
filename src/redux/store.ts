@@ -13,6 +13,10 @@ export const store = configureStore({
     userImage: userImageReducer,
     faceSimilarityCheck: faceSimilarityCheckReducer, // <-- add this
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

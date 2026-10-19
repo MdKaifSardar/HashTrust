@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { ToastContainer } from "react-toastify";
 import UserLoginFormComponent from "@/components/UserLoginFormComponent";
 
 export default function LoginPage() {
@@ -24,7 +23,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center w-full bg-auth-gradient dark:bg-slate-950 transition-colors duration-200 relative">
-      <ToastContainer />
       <UserLoginFormComponent />
     </div>
   );

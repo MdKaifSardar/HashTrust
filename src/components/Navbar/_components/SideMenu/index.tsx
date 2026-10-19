@@ -1,12 +1,13 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { NAV_LINKS } from "@/utils/data/Navbar";
-import { motion } from "framer-motion";
-import { getRoleFromSessionCookie } from "@/lib/actions/user.actions";
-import ThemeToggle from "@/components/ThemeToggle";
 
-const SideMenu = ({
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getRoleFromSessionCookie } from "@/lib/actions/user.actions";
+import { FiX, FiShield, FiUser, FiBriefcase, FiLogOut, FiGrid, FiArrowRight } from "react-icons/fi";
+import { motion } from "framer-motion";
+
+export const SideMenu = ({
   open,
   setOpen,
   hasAuth,
@@ -15,67 +16,8 @@ const SideMenu = ({
   setOpen: (v: boolean) => void;
   hasAuth: boolean;
 }) => {
-  const router = require("next/navigation").useRouter();
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [signupDropdown, setSignupDropdown] = useState(false);
-  const [loginDropdown, setLoginDropdown] = useState(false);
-  const signupRef = useRef<HTMLDivElement>(null);
-  const loginRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  useEffect(() => {
-    if (!open) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        signupRef.current &&
-        !signupRef.current.contains(event.target as Node)
-      ) {
-        setSignupDropdown(false);
-      }
-      if (
-        loginRef.current &&
-        !loginRef.current.contains(event.target as Node)
-      ) {
-        setLoginDropdown(false);
-      }
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open, setOpen]);
-
-  // Only show dashboard and logout if authenticated, otherwise show login and sign up
-  const filteredLinks = hasAuth
-    ? [
-        ...NAV_LINKS.filter(
-          (l) =>
-            l.label !== "Login" &&
-            l.label !== "Sign Up" &&
-            l.label !== "User Sign Up" &&
-            l.label !== "Organisation Sign Up" &&
-            l.label !== "Dashboard"
-        ),
-        { label: "Dashboard", href: "#" }, // Ensure dashboard is present when authenticated
-      ]
-    : NAV_LINKS.filter((l) => l.label !== "Dashboard" && l.label !== "Logout");
-  const handleLogout = () => {
-    // Trigger LayoutComponent to show the logout modal
-    window.dispatchEvent(new Event("showLogoutModal"));
-    setOpen(false); // Close side menu when logout is triggered
-  };
-
-  useEffect(() => {
-    // Listen for logout confirmation event from LayoutComponent
-    const onLogoutConfirmed = () => {
-      setOpen(false); // Close side menu after logout confirmed
-    };
-    window.addEventListener("logoutConfirmed", onLogoutConfirmed);
-    return () =>
-      window.removeEventListener("logoutConfirmed", onLogoutConfirmed);
-  }, [setOpen]);
-
-  // Dashboard link handler
   const handleDashboardClick = async () => {
     try {
       const sessionCookie = document.cookie
@@ -83,234 +25,175 @@ const SideMenu = ({
         .map((row) => row.trim())
         .find((row) => row.startsWith("session="))
         ?.slice("session=".length);
+
       if (!sessionCookie) {
-        // Show error toast if no session
         if (typeof window !== "undefined") {
           const { toast } = await import("react-toastify");
           toast.error("You are not signed in. Please log in first.");
         }
         return;
       }
-      // Get role from session cookie
+
       const res = await getRoleFromSessionCookie(sessionCookie);
       if (res.ok && res.role) {
+        setOpen(false);
         if (res.role === "user") {
           router.push("/pages/user/dashboard");
         } else if (res.role === "organisation") {
           router.push("/pages/organisation/dashboard");
-        } else {
-          if (typeof window !== "undefined") {
-            const { toast } = await import("react-toastify");
-            toast.error("Unknown role. Cannot redirect to dashboard.");
-          }
-        }
-      } else {
-        if (typeof window !== "undefined") {
-          const { toast } = await import("react-toastify");
-          toast.error(
-            res.message || "Unable to determine role. Please log in."
-          );
         }
       }
-    } catch (err: any) {
-      if (typeof window !== "undefined") {
-        const { toast } = await import("react-toastify");
-        toast.error(err?.message || "Unable to determine role. Please log in.");
-      }
+    } catch {
+      setOpen(false);
     }
   };
 
-  const handleSectionScroll = (sectionId: string) => {
-    if (typeof window !== "undefined") {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-        setOpen(false);
-      }
-    }
+  const handleLogout = () => {
+    window.dispatchEvent(new Event("showLogoutModal"));
+    setOpen(false);
   };
 
   return (
-    <motion.div
-      ref={menuRef}
-      initial={{ x: "-100%", opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: "-100%", opacity: 0 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed top-0 left-0 h-screen w-[75vw] max-w-xs bg-white dark:bg-slate-900 border-r border-transparent dark:border-slate-800 shadow-2xl z-50 flex flex-col pt-6 px-6 gap-4 md:hidden transition-colors"
-      style={{ zIndex: 50 }}
+    <motion.aside
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "100%" }}
+      transition={{ type: "spring", damping: 30, stiffness: 300 }}
       onClick={(e) => e.stopPropagation()}
+      className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-white/10 shadow-2xl z-[1001] flex flex-col p-6 overflow-y-auto"
     >
-      <button
-        className="self-end mb-2 p-2 rounded hover:bg-blue-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:focus:ring-cyan-500/50"
-        aria-label="Close menu"
-        onClick={() => setOpen(false)}
-      >
-        <span className="text-2xl text-blue-700 dark:text-cyan-400">&times;</span>
-      </button>
-      {/* Render all links except User/Org Sign Up and Login as dropdowns */}
-      {filteredLinks.map((link) =>
-        (link.label === "Services" || link.label === "Features") ? (
-          <button
-            key={link.label}
-            type="button"
-            className="text-lg font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300 w-full text-left"
-            onClick={() => handleSectionScroll(link.label.toLowerCase())}
-          >
-            {link.label}
-          </button>
-        ) : link.label === "Sign Up" && !hasAuth ? (
-          <div
-            key="SignUpDropdown"
-            ref={signupRef}
-            className="relative"
-            onMouseEnter={() => setSignupDropdown(true)}
-            onMouseLeave={() => setSignupDropdown(false)}
-          >
-            <button
-              className="text-lg font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300 w-full text-left"
-              onClick={() => setSignupDropdown((v) => !v)}
-              type="button"
-              onMouseEnter={() => setSignupDropdown(true)}
-              onMouseLeave={(e) => {
-                if (
-                  !e.relatedTarget ||
-                  !(
-                    signupRef.current &&
-                    signupRef.current.contains(e.relatedTarget as Node)
-                  )
-                ) {
-                  setSignupDropdown(false);
-                }
-              }}
-            >
-              Sign Up
-            </button>
-            {signupDropdown && (
-              <div
-                className="absolute left-0 top-full mt-2 bg-white border border-blue-100 rounded shadow-lg min-w-[160px] z-50"
-                onMouseEnter={() => setSignupDropdown(true)}
-                onMouseLeave={() => setSignupDropdown(false)}
-              >
-                <Link
-                  href="/pages/auth/sign-up/user"
-                  className="block px-4 py-2 text-blue-700 hover:bg-blue-50"
-                  onClick={() => {
-                    setSignupDropdown(false);
-                    setOpen(false);
-                  }}
-                >
-                  User Sign Up
-                </Link>
-                <Link
-                  href="/pages/auth/sign-up/organisation"
-                  className="block px-4 py-2 text-blue-700 hover:bg-blue-50"
-                  onClick={() => {
-                    setSignupDropdown(false);
-                    setOpen(false);
-                  }}
-                >
-                  Organisation Sign Up
-                </Link>
-              </div>
-            )}
+      {/* Header */}
+      <div className="flex items-center justify-between pb-6 border-b border-slate-200 dark:border-white/10">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-sky-600 dark:bg-sky-500 flex items-center justify-center text-white dark:text-slate-950">
+            <FiShield size={18} />
           </div>
-        ) : link.label === "Login" && !hasAuth ? (
-          <div
-            key="LoginDropdown"
-            ref={loginRef}
-            className="relative"
-            onMouseEnter={() => setLoginDropdown(true)}
-            onMouseLeave={() => setLoginDropdown(false)}
-          >
+          <span className="font-bold text-lg text-slate-900 dark:text-white">HashTrust</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+          aria-label="Close menu"
+        >
+          <FiX size={20} />
+        </button>
+      </div>
+
+      {/* Main Navigation Links */}
+      <nav className="flex flex-col gap-2 py-6">
+        <Link
+          href="/"
+          onClick={() => setOpen(false)}
+          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
+        >
+          <span>Home</span>
+          <FiArrowRight size={16} className="text-slate-400" />
+        </Link>
+        <Link
+          href="/#services"
+          onClick={() => setOpen(false)}
+          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
+        >
+          <span>Services</span>
+          <FiArrowRight size={16} className="text-slate-400" />
+        </Link>
+        <Link
+          href="/#features"
+          onClick={() => setOpen(false)}
+          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
+        >
+          <span>Features</span>
+          <FiArrowRight size={16} className="text-slate-400" />
+        </Link>
+        <Link
+          href="/pages/demo"
+          onClick={() => setOpen(false)}
+          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
+        >
+          <span>Face Similarity Demo</span>
+          <FiArrowRight size={16} className="text-slate-400" />
+        </Link>
+        <Link
+          href="/pages/demo-face-liveness"
+          onClick={() => setOpen(false)}
+          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
+        >
+          <span>Silent Liveness Demo</span>
+          <FiArrowRight size={16} className="text-slate-400" />
+        </Link>
+      </nav>
+
+      {/* Auth Actions Section */}
+      <div className="mt-auto pt-6 border-t border-slate-200 dark:border-white/10 flex flex-col gap-3">
+        {hasAuth ? (
+          <>
             <button
-              className="text-lg font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300 w-full text-left"
-              onClick={() => setLoginDropdown((v) => !v)}
               type="button"
-              onMouseEnter={() => setLoginDropdown(true)}
-              onMouseLeave={(e) => {
-                if (
-                  !e.relatedTarget ||
-                  !(
-                    loginRef.current &&
-                    loginRef.current.contains(e.relatedTarget as Node)
-                  )
-                ) {
-                  setLoginDropdown(false);
-                }
-              }}
+              onClick={handleDashboardClick}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold shadow-md shadow-sky-600/20"
             >
-              Login
+              <FiGrid size={18} />
+              <span>Go to Dashboard</span>
             </button>
-            {loginDropdown && (
-              <div
-                className="absolute left-0 top-full mt-2 bg-white border border-blue-100 rounded shadow-lg min-w-[160px] z-50"
-                onMouseEnter={() => setLoginDropdown(true)}
-                onMouseLeave={() => setLoginDropdown(false)}
-              >
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium transition-colors"
+            >
+              <FiLogOut size={18} />
+              <span>Sign Out</span>
+            </button>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Personal Identity
+              </p>
+              <div className="grid grid-cols-2 gap-2">
                 <Link
                   href="/pages/auth/login/user"
-                  className="block px-4 py-2 text-blue-700 hover:bg-blue-50"
-                  onClick={() => {
-                    setLoginDropdown(false);
-                    setOpen(false);
-                  }}
+                  onClick={() => setOpen(false)}
+                  className="py-2.5 px-3 rounded-xl text-center text-xs font-semibold border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-200 transition-colors"
                 >
                   User Login
                 </Link>
                 <Link
-                  href="/pages/auth/login/organisation"
-                  className="block px-4 py-2 text-blue-700 hover:bg-blue-50"
-                  onClick={() => {
-                    setLoginDropdown(false);
-                    setOpen(false);
-                  }}
+                  href="/pages/auth/sign-up/user"
+                  onClick={() => setOpen(false)}
+                  className="py-2.5 px-3 rounded-xl text-center text-xs font-semibold bg-sky-600 text-white shadow-sm hover:bg-sky-500 transition-colors"
                 >
-                  Organisation Login
+                  User Sign Up
                 </Link>
               </div>
-            )}
-          </div>
-        ) : link.label === "Dashboard" && hasAuth ? (
-          <button
-            key={link.label}
-            type="button"
-            className="text-lg font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300 w-full text-left"
-            onClick={() => {
-              setOpen(false);
-              handleDashboardClick();
-            }}
-          >
-            {link.label}
-          </button>
-        ) : (
-          <Link
-            key={link.label}
-            href={link.href}
-            className="text-lg font-semibold text-blue-700 hover:text-cyan-500 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-cyan-300"
-            onClick={() => setOpen(false)}
-          >
-            {link.label}
-          </Link>
-        )
-      )}
-      {hasAuth && (
-        <button
-          onClick={handleLogout}
-          className="text-lg font-semibold text-blue-700 dark:text-slate-200 hover:text-red-500 dark:hover:text-red-400 transition-colors font-sans px-2 py-2 rounded focus:outline-none focus:ring-2 focus:ring-red-300 dark:focus:ring-red-500/50"
-        >
-          Logout
-        </button>
-      )}
+            </div>
 
-      {/* Theme Toggle in Mobile Drawer */}
-      <div className="mt-auto pt-4 border-t border-blue-100 dark:border-slate-800 flex items-center justify-between pb-6">
-        <span className="text-sm font-medium text-slate-600 dark:text-slate-400 font-sans">
-          Appearance
-        </span>
-        <ThemeToggle />
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                For Organisations
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/pages/auth/login/organisation"
+                  onClick={() => setOpen(false)}
+                  className="py-2.5 px-3 rounded-xl text-center text-xs font-semibold border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-200 transition-colors"
+                >
+                  Org Login
+                </Link>
+                <Link
+                  href="/pages/auth/sign-up/organisation"
+                  onClick={() => setOpen(false)}
+                  className="py-2.5 px-3 rounded-xl text-center text-xs font-semibold bg-emerald-600 text-white shadow-sm hover:bg-emerald-500 transition-colors"
+                >
+                  Org Sign Up
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </motion.div>
+    </motion.aside>
   );
 };
 
