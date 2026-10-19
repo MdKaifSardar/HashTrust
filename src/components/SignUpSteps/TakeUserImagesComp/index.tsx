@@ -19,7 +19,6 @@ import {
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { useLivenessDetector } from "../../../utils/hooks/LivenessDetector";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { resetFaceSimilarityCheck } from "@/redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
 import { FiCamera, FiRefreshCw, FiArrowLeft, FiArrowRight, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import Button from "@/components/ui/Button";

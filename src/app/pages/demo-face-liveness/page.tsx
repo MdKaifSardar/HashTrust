@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useLivenessDetector } from "@/utils/hooks/LivenessDetector";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { FiCamera, FiArrowRight } from "react-icons/fi";
 import Dropzone from "@/components/ui/Dropzone";
 import Button from "@/components/ui/Button";
@@ -45,7 +44,6 @@ export default function LivenessPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors py-12 px-4 sm:px-6">
-      <ToastContainer position="top-right" />
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center">

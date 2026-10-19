@@ -17,7 +17,7 @@ import {
 } from "../../../redux/features/signUpSteps/stepSlice";
 import ReviewDataModal from "./_components/ReviewDataModal";
 import { createUser } from "@/lib/actions/user.actions";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import {
   selectPreviewUrl,
   selectIdentityDocumentFile,
@@ -121,7 +121,6 @@ export const ReviewDataComp: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col">
-      <ToastContainer position="top-right" />
 
       {/* Header */}
       <div className="mb-6">

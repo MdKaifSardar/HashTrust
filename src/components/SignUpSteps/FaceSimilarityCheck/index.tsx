@@ -24,7 +24,6 @@ import {
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { compareFacesAction } from "../../../lib/actions/faceSimilarity.actions";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { FiCheckSquare, FiArrowLeft, FiArrowRight, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";

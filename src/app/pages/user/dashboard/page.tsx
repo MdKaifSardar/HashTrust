@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { authenticateUserWithSessionCookie } from "@/lib/actions/user.actions";
 import Loader from "@/components/Loader";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import {
   FiShield,
@@ -80,7 +80,6 @@ const DashboardPage: React.FC = () => {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors p-4">
-        <ToastContainer />
         <div className="max-w-md w-full glass-panel-elevated p-8 rounded-3xl text-center">
           <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 mx-auto flex items-center justify-center mb-4">
             <FiLock size={22} />
@@ -126,7 +125,6 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 py-10 px-4 sm:px-6 lg:px-8">
-      <ToastContainer position="top-right" />
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Top Header & Verification Pill */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-white/10">

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { authenticateOrgWithSessionCookie } from "@/lib/actions/org.actions";
 import Loader from "@/components/Loader";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import OrgSideMenuComp from "./_components/OrgSideMenuComp";
 import OrgDetailsComp from "./_components/OrgDetailsComp";
@@ -62,7 +62,6 @@ export const OrgDashboardComp: React.FC = () => {
   if (!organisation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors p-4">
-        <ToastContainer />
         <div className="max-w-md w-full glass-panel-elevated p-8 rounded-3xl text-center">
           <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 mx-auto flex items-center justify-center mb-4">
             <FiLock size={22} />
@@ -92,7 +91,6 @@ export const OrgDashboardComp: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 relative flex transition-colors duration-200">
-      <ToastContainer position="top-right" />
 
       {/* Sidebar Navigation */}
       <OrgSideMenuComp

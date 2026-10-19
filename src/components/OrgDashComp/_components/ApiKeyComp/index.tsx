@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import CreateApiKeys from "./_components/CreateApiKeys";
 import DisplayApiKeys from "./_components/DisaplyApiKeys";
 import AvailableApi from "./_components/AvailableApi";
-import { ToastContainer } from "react-toastify";
 import { FiKey } from "react-icons/fi";
 
 export const ApiKeyComp: React.FC<{ organisationUid?: string }> = ({
@@ -16,7 +15,6 @@ export const ApiKeyComp: React.FC<{ organisationUid?: string }> = ({
 
   return (
     <div className="w-full space-y-8">
-      <ToastContainer position="top-right" />
 
       {/* Header & Create Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-white/10">

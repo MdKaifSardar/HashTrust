@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import { createOrganisation } from "@/lib/actions/org.actions";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -45,7 +45,6 @@ export const OrgSignupComp = () => {
 
   return (
     <div className="min-h-screen w-full relative flex items-center justify-center p-4 py-12 bg-auth-gradient">
-      <ToastContainer position="top-right" />
 
       {/* Top Controls */}
       <div className="absolute top-6 left-6 z-10">

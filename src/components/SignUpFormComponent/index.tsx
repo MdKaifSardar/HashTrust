@@ -9,7 +9,6 @@ import CreatePasswordComp from "../SignUpSteps/CreatePasswordComp";
 import ReviewDataComp from "../SignUpSteps/ReviewDataComp";
 import { useSelector } from "react-redux";
 import { selectCurrentStep } from "../../redux/features/signUpSteps/stepSlice";
-import { ToastContainer } from "react-toastify";
 import SideProgressMenu from "./_components/SideProgressMenu";
 import MobileTopProgressBar from "./_components/MobileTopProgressBar";
 
@@ -24,7 +23,6 @@ export const SignUpFormComponent: React.FC = () => {
 
       {/* Main Step Workspace */}
       <main className="flex-1 ml-0 sm:ml-[30%] lg:ml-[22%] w-full sm:w-[calc(100%-30%)] lg:w-[calc(100%-22%)] min-h-screen p-4 sm:p-8 lg:p-12 flex flex-col justify-center items-center">
-        <ToastContainer position="top-right" />
         <div className="w-full max-w-2xl glass-panel-elevated p-6 sm:p-10 rounded-3xl relative">
           {currentStep === 0 && <UploadIDComp />}
           {currentStep === 1 && <DataExtractDocComp />}

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { compareFacesAction } from "@/lib/actions/faceSimilarity.actions";
 import { FiCheckSquare, FiArrowRight } from "react-icons/fi";
 import Dropzone from "@/components/ui/Dropzone";
@@ -93,7 +92,6 @@ export default function FaceSimilarityPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors py-12 px-4 sm:px-6">
-      <ToastContainer position="top-right" />
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center">
