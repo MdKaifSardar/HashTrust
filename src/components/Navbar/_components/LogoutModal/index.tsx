@@ -1,36 +1,47 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
+import { FiLogOut } from "react-icons/fi";
+import Button from "@/components/ui/Button";
 
-const LogoutModal = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) => (
+export const LogoutModal = ({
+  onConfirm,
+  onCancel,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => (
   <motion.div
-    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
+    onClick={onCancel}
   >
     <motion.div
-      className="bg-white dark:bg-slate-900 border border-transparent dark:border-slate-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center transition-colors"
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.9, opacity: 0 }}
+      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full flex flex-col items-center text-center transition-colors"
+      initial={{ scale: 0.95, opacity: 0, y: 10 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      exit={{ scale: 0.95, opacity: 0, y: 10 }}
+      onClick={(e) => e.stopPropagation()}
     >
-      <h3 className="text-xl font-bold text-blue-700 dark:text-cyan-400 mb-3">Confirm Logout</h3>
-      <p className="mb-6 text-gray-700 dark:text-slate-300 text-center text-sm">
-        Are you sure you want to log out of your account?
+      <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 flex items-center justify-center mb-4 border border-rose-100 dark:border-rose-900/50">
+        <FiLogOut size={22} />
+      </div>
+      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+        Sign Out
+      </h3>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+        Are you sure you want to end your session? You will need to log back in to access your dashboard.
       </p>
-      <div className="flex gap-4 w-full justify-center">
-        <button
-          onClick={onConfirm}
-          className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-red-700 transition focus:outline-none focus:ring-2 focus:ring-red-500/50"
-        >
-          Logout
-        </button>
-        <button
-          onClick={onCancel}
-          className="bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-200 px-5 py-2.5 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-slate-700 transition focus:outline-none focus:ring-2 focus:ring-slate-400/50"
-        >
+      <div className="grid grid-cols-2 gap-3 w-full">
+        <Button variant="outline" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
+        <Button variant="danger" onClick={onConfirm}>
+          Sign Out
+        </Button>
       </div>
     </motion.div>
   </motion.div>

@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -22,11 +23,12 @@ import {
   selectCurrentStep,
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { compareFacesAction } from "../../../lib/actions/faceSimilarity.actions";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiCheckSquare, FiArrowLeft, FiArrowRight, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
-// Helper to convert base64 data URL or blob/http URL to File
 async function urlOrBase64ToFile(src: string, filename: string): Promise<File> {
   if (src.startsWith("data:")) {
     const arr = src.split(",");
@@ -43,9 +45,9 @@ async function urlOrBase64ToFile(src: string, filename: string): Promise<File> {
   }
 }
 
-const FaceSimilarityCheck: React.FC = () => {
+export const FaceSimilarityCheck: React.FC = () => {
   const dispatch = useDispatch();
-  const { similarityScore, isMatch, loading, error, apiResult, hasChecked } =
+  const { similarityScore, isMatch, loading, error, hasChecked } =
     useSelector(selectFaceSimilarityCheck);
   const extractedFacePreview = useSelector(selectFaceImage);
   const userImagePreview = useSelector(selectUserImagePreview);
@@ -59,7 +61,6 @@ const FaceSimilarityCheck: React.FC = () => {
   useEffect(() => {
     dispatch(setIdFaceImage(extractedFacePreview ?? null));
     dispatch(setUserFaceImage(userImagePreview ?? null));
-    // Reset similarity check data if a new user image is taken
     if (
       prevLatestUserImagePreview.current !== undefined &&
       latestUserImagePreview &&
@@ -68,15 +69,12 @@ const FaceSimilarityCheck: React.FC = () => {
       dispatch(resetFaceSimilarityCheck());
     }
     prevLatestUserImagePreview.current = latestUserImagePreview;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     extractedFacePreview,
     userImagePreview,
     latestUserImagePreview,
     dispatch,
   ]);
-
-  // On mount, if similarityScore is present, set hasChecked to true and restore apiResult for display
 
   const handleCheckSimilarity = async () => {
     if (!extractedFacePreview || !userImagePreview) {
@@ -86,7 +84,7 @@ const FaceSimilarityCheck: React.FC = () => {
     dispatch(setApiResult(null));
     dispatch(setLoading(true));
     dispatch(setError(null));
-    // toast.info("Checking face similarity...");
+
     try {
       const mainFile = await urlOrBase64ToFile(
         extractedFacePreview,
@@ -103,22 +101,20 @@ const FaceSimilarityCheck: React.FC = () => {
       const apiRes = await compareFacesAction(formData);
 
       dispatch(setApiResult(apiRes));
-
-      // Use only API result for match
       const confidence = apiRes.confidence ?? 0;
-      const isMatch = apiRes.isMatch ?? false;
+      const match = apiRes.isMatch ?? false;
 
       if (apiRes.ok) {
         dispatch(
           setSimilarityResult({
             score: confidence,
-            isMatch: isMatch,
+            isMatch: match,
           })
         );
         dispatch(setHasChecked(true));
         toast.success(
-          `Done! Confidence: ${confidence} — ${
-            isMatch ? "Matched" : "Not Matched"
+          `Comparison complete! Score: ${confidence}% — ${
+            match ? "Identity Matched" : "Match Failed"
           }`
         );
       } else {
@@ -138,115 +134,126 @@ const FaceSimilarityCheck: React.FC = () => {
   const handleNext = () => dispatch(setCurrentStep(currentStep + 1));
   const handlePrev = () => dispatch(setCurrentStep(currentStep - 1));
 
-  const disableAll = loading;
-
   return (
-    <div className="bg-transparent flex flex-col justify-center items-center h-full rounded-lg relative w-full min-h-screen">
-      {/* Top navigation buttons at top corners */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
-        <button
-          type="button"
-          onClick={handlePrev}
-          disabled={disableAll}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            disableAll
-              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
-              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
-          }
-        `}
-        >
-          <FiChevronLeft size={28} />
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={disableAll || !isMatch}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            disableAll || !isMatch
-              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-          }
-        `}
-        >
-          <FiChevronRight size={28} />
-        </button>
+    <div className="w-full flex flex-col">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-100 dark:border-sky-900/40">
+            <FiCheckSquare size={18} />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              1:1 Biometric Match
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Cross-verifying your live selfie against your government ID photograph.
+            </p>
+          </div>
+        </div>
       </div>
-      <div className="w-full flex flex-col items-center">
-        <ToastContainer position="top-right" />
-        <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-slate-100 transition-colors">
-          Face Similarity Check
-        </h2>
-        <div className="flex gap-8 mb-6 items-center">
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-gray-600 dark:text-slate-400 mb-2">Extracted Face</span>
-            {extractedFacePreview ? (
-              <img
-                src={extractedFacePreview}
-                alt="Extracted Face"
-                className="w-32 h-32 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
-              />
-            ) : (
-              <div className="w-32 h-32 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
-                No Image
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-sm text-gray-600 dark:text-slate-400 mb-2">Taken Image</span>
-            {userImagePreview ? (
-              <img
-                src={userImagePreview}
-                alt="User Face"
-                className="w-32 h-32 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
-              />
-            ) : (
-              <div className="w-32 h-32 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
-                No Image
-              </div>
-            )}
-          </div>
-        </div>
 
-        <div className="flex gap-4 mb-4">
-          <button
-            type="button"
-            onClick={handleCheckSimilarity}
-            disabled={disableAll || !extractedFacePreview || !userImagePreview}
-            className={`px-6 py-2 rounded shadow font-semibold ${
-              disableAll || !extractedFacePreview || !userImagePreview
-                ? "bg-blue-300 text-white cursor-not-allowed"
-                : "bg-blue-500 text-white hover:bg-blue-600"
-            }`}
-          >
-            {hasChecked ? "Recheck" : "Check Similarity"}
-          </button>
-        </div>
-
-        <div className="mt-[.5rem] text-gray-700 dark:text-slate-300 text-sm w-full flex flex-col items-center">
-          {loading ? (
-            "Checking similarity..."
-          ) : similarityScore !== null ? (
-            <div className="flex flex-col items-center gap-2">
-              <span>
-                Confidence Score:{" "}
-                <span className="font-mono text-blue-700 dark:text-cyan-400 font-bold">
-                  {similarityScore}
-                </span>
-              </span>
-              <span
-                className={`font-semibold text-lg ${
-                  isMatch ? "text-green-600 dark:text-emerald-400" : "text-red-600 dark:text-rose-400"
-                }`}
-              >
-                {isMatch ? "Matched" : "Not Matched"}
-              </span>
+      {/* Comparison Viewport */}
+      <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 flex flex-col items-center">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 w-full">
+          {/* Card 1: ID Face */}
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              Gov ID Document
+            </span>
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-white/10 shadow-sm bg-slate-100 dark:bg-slate-800">
+              {extractedFacePreview ? (
+                <img
+                  src={extractedFacePreview}
+                  alt="Extracted Face"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+                  Missing
+                </div>
+              )}
             </div>
-          ) : null}
+          </div>
+
+          {/* Connection Indicator */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-200 dark:border-sky-800 font-bold text-xs">
+              VS
+            </div>
+          </div>
+
+          {/* Card 2: Live Selfie */}
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+              Live Webcam Capture
+            </span>
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-white/10 shadow-sm bg-slate-100 dark:bg-slate-800">
+              {userImagePreview ? (
+                <img
+                  src={userImagePreview}
+                  alt="Live Selfie"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+                  Missing
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {error && <div className="text-red-500 dark:text-red-400 mt-2">{error}</div>}
+        {/* Match Result Display */}
+        {similarityScore !== null && (
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <Badge variant={isMatch ? "verified" : "danger"} size="md">
+              {isMatch ? "Biometrics Matched" : "Match Failed: Significant Discrepancy"}
+            </Badge>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              Similarity Confidence: <strong className="text-slate-900 dark:text-white font-bold">{similarityScore}%</strong>
+            </span>
+          </div>
+        )}
+
+        {/* Trigger Button */}
+        <div className="mt-6">
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleCheckSimilarity}
+            disabled={loading || !extractedFacePreview || !userImagePreview}
+            isLoading={loading}
+          >
+            {hasChecked ? "Re-run Biometric Comparison" : "Compare Biometric Signatures"}
+          </Button>
+        </div>
+
+        {error && (
+          <div className="mt-3 text-xs text-rose-500 font-medium">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Action Footer */}
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrev}
+          disabled={loading}
+          leftIcon={<FiArrowLeft size={16} />}
+        >
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleNext}
+          disabled={loading || !isMatch}
+          rightIcon={<FiArrowRight size={16} />}
+        >
+          Continue to Credentials
+        </Button>
       </div>
     </div>
   );

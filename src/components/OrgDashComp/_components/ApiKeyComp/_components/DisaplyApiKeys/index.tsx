@@ -1,11 +1,13 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import {
   getApiKeysForOrg,
   deleteApiKeyById,
 } from "@/lib/actions/apikey.actions";
 import { toast } from "react-toastify";
-import { FiCopy, FiTrash2 } from "react-icons/fi";
+import { FiCopy, FiTrash2, FiKey, FiEye, FiEyeOff } from "react-icons/fi";
+import Button from "@/components/ui/Button";
 
 const ConfirmModal = ({
   open,
@@ -18,25 +20,24 @@ const ConfirmModal = ({
 }) => {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl p-8 max-w-sm w-full flex flex-col items-center border border-transparent dark:border-slate-800 transition-colors">
-        <h3 className="text-lg font-bold text-blue-700 dark:text-slate-100 mb-4">Delete API Key</h3>
-        <p className="mb-6 text-gray-700 dark:text-slate-300 text-center">
-          Are you sure you want to delete this API key?
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-6 sm:p-8 max-w-sm w-full flex flex-col items-center border border-slate-200 dark:border-white/10 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 flex items-center justify-center mb-4">
+          <FiTrash2 size={22} />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+          Revoke API Key
+        </h3>
+        <p className="mb-6 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          Any external services or clients currently relying on this key will immediately lose access.
         </p>
-        <div className="flex gap-4">
-          <button
-            onClick={onConfirm}
-            className="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-700 transition"
-          >
-            Delete
-          </button>
-          <button
-            onClick={onCancel}
-            className="bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300 px-4 py-2 rounded font-semibold hover:bg-gray-300 dark:hover:bg-slate-700 transition"
-          >
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <Button variant="outline" size="sm" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
+          <Button variant="danger" size="sm" onClick={onConfirm}>
+            Revoke Key
+          </Button>
         </div>
       </div>
     </div>
@@ -44,11 +45,11 @@ const ConfirmModal = ({
 };
 
 function maskApiKey(apiKey: string) {
-  if (!apiKey || apiKey.length < 8) return "********";
-  return `${apiKey.slice(0, 4)}.....${apiKey.slice(-4)}`;
+  if (!apiKey || apiKey.length < 8) return "••••••••••••••••";
+  return `${apiKey.slice(0, 6)}••••••••••••••••${apiKey.slice(-4)}`;
 }
 
-const DisplayApiKeys = ({
+export const DisplayApiKeys = ({
   organisationUid,
   refresh,
 }: {
@@ -59,20 +60,21 @@ const DisplayApiKeys = ({
     Array<{ id?: string; apiKey: string; createdAt: string }>
   >([]);
   const [loading, setLoading] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<{ id?: string } | null>(null);
+  const [revealedKeys, setRevealedKeys] = useState<Record<string, boolean>>({});
 
-  const fetchApiKeys = async () => {
+  const fetchKeys = async () => {
     setLoading(true);
     try {
-      // Get session cookie from browser
       const sessionCookie = document.cookie
         .split(";")
         .map((row) => row.trim())
         .find((row) => row.startsWith("session="))
         ?.slice("session=".length);
+
       if (!sessionCookie) {
-        toast.error("Not authenticated.");
+        setApiKeys([]);
         setLoading(false);
         return;
       }
@@ -80,116 +82,141 @@ const DisplayApiKeys = ({
       if (res.ok && res.apiKeys) {
         setApiKeys(res.apiKeys);
       } else {
-        toast.error(res.message || "Failed to fetch API Keys.");
+        setApiKeys([]);
       }
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to fetch API Keys.");
+    } catch {
+      setApiKeys([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchApiKeys();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchKeys();
   }, [refresh, organisationUid]);
 
-  const handleDeleteClick = (id: string | undefined) => {
-    setDeleteKeyId(id || null);
-    setDeleteModalOpen(true);
+  const handleCopy = (apiKey: string) => {
+    navigator.clipboard.writeText(apiKey);
+    toast.success("API Key copied to clipboard!");
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteKeyId) {
-      toast.error("API Key ID not found.");
-      setDeleteModalOpen(false);
+  const toggleReveal = (id: string) => {
+    setRevealedKeys((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleDelete = (keyObj: { id?: string }) => {
+    setSelectedKey(keyObj);
+    setShowModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedKey?.id) {
+      toast.error("Cannot delete: Key ID is missing.");
+      setShowModal(false);
       return;
     }
-    setLoading(true);
     try {
-      // Get session cookie from browser
       const sessionCookie = document.cookie
         .split(";")
         .map((row) => row.trim())
         .find((row) => row.startsWith("session="))
         ?.slice("session=".length);
-      if (!sessionCookie) {
-        toast.error("Not authenticated.");
-        setLoading(false);
-        setDeleteModalOpen(false);
-        return;
-      }
-      const res = await deleteApiKeyById(deleteKeyId, sessionCookie);
+
+      const res = await deleteApiKeyById(selectedKey.id, sessionCookie || "");
       if (res.ok) {
-        toast.success(res.message || "API Key deleted!");
-        await fetchApiKeys(); // Reload API keys after deletion
+        toast.success(res.message || "API Key deleted.");
+        fetchKeys();
       } else {
         toast.error(res.message || "Failed to delete API Key.");
       }
     } catch (e: any) {
       toast.error(e?.message || "Failed to delete API Key.");
     } finally {
-      setLoading(false);
-      setDeleteModalOpen(false);
-      setDeleteKeyId(null);
+      setShowModal(false);
+      setSelectedKey(null);
     }
   };
 
   return (
-    <div className="mt-6">
-      <div className="text-gray-700 dark:text-slate-300 font-semibold mb-2">Your API Keys:</div>
-      {loading && <div className="text-blue-600 dark:text-cyan-400">Loading...</div>}
-      {apiKeys.length === 0 && !loading && (
-        <div className="text-gray-500 dark:text-slate-400">No API Keys found.</div>
-      )}
-      <ul className="space-y-4">
-        {apiKeys.map((key, idx) => (
-          <li
-            key={(key.id || key.apiKey) + idx}
-            className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 dark:bg-slate-800/80 rounded-lg px-3 py-2 border border-blue-200 dark:border-slate-700 shadow-sm transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-blue-700 dark:text-cyan-400 text-base sm:text-lg select-all bg-white dark:bg-slate-900 px-2 py-1 rounded border border-blue-200 dark:border-slate-700">
-                {maskApiKey(key.apiKey)}
-              </span>
-              <button
-                type="button"
-                title="Copy"
-                aria-label="Copy API Key"
-                onClick={() => {
-                  navigator.clipboard.writeText(key.apiKey);
-                  toast.success("API Key copied to clipboard!");
-                }}
-                className="text-blue-600 dark:text-cyan-400 hover:text-blue-800 dark:hover:text-cyan-300 transition p-1 rounded focus:outline-none"
-              >
-                <FiCopy size={18} />
-              </button>
-              <button
-                type="button"
-                title="Delete"
-                aria-label="Delete API Key"
-                onClick={() => handleDeleteClick(key.id)}
-                className="text-red-600 dark:text-rose-400 hover:text-red-800 dark:hover:text-rose-300 transition p-1 rounded focus:outline-none"
-              >
-                <FiTrash2 size={18} />
-              </button>
-            </div>
-            <div className="text-xs text-gray-500 dark:text-slate-400 mt-2 sm:mt-0 sm:ml-4 flex items-center">
-              <span>
-                Created:{" "}
-                {key.createdAt
-                  ? new Date(key.createdAt).toLocaleString()
-                  : "N/A"}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="w-full mt-6">
       <ConfirmModal
-        open={deleteModalOpen}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteModalOpen(false)}
+        open={showModal}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowModal(false);
+          setSelectedKey(null);
+        }}
       />
+
+      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">
+        Active API Credentials
+      </h3>
+
+      {loading ? (
+        <div className="p-8 text-center text-xs text-slate-400">Loading keys...</div>
+      ) : apiKeys.length === 0 ? (
+        <div className="p-8 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 text-center">
+          <FiKey size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            No API Keys Generated
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Generate your first key above to begin authenticating verification requests.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {apiKeys.map((k) => {
+            const keyId = k.id || k.apiKey;
+            const isRevealed = revealedKeys[keyId];
+
+            return (
+              <div
+                key={keyId}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs sm:text-sm font-bold text-slate-900 dark:text-white select-all">
+                      {isRevealed ? k.apiKey : maskApiKey(k.apiKey)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleReveal(keyId)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded"
+                      title={isRevealed ? "Hide key" : "Reveal key"}
+                    >
+                      {isRevealed ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Created on {k.createdAt ? new Date(k.createdAt).toLocaleDateString() : "Active"}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(k.apiKey)}
+                    leftIcon={<FiCopy size={13} />}
+                  >
+                    Copy Key
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(k)}
+                    className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                    title="Revoke key"
+                  >
+                    <FiTrash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

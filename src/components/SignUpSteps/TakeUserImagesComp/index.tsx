@@ -1,15 +1,15 @@
 "use client";
+
 import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setImage,
   setUserImagePreview,
-  setLatestUserImagePreview, // <-- import this
+  setLatestUserImagePreview,
   setFaceLiveness,
   resetImages,
   selectUserImage,
   selectUserImagePreview,
-  selectLatestUserImagePreview, // <-- import this
   selectFaceLiveness,
   selectFaceLivenessScore,
 } from "../../../redux/features/userImage/userImageSlice";
@@ -21,13 +21,14 @@ import { useLivenessDetector } from "../../../utils/hooks/LivenessDetector";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { resetFaceSimilarityCheck } from "@/redux/features/faceSimilarityCheckSlice/faceSImilarityCheckSlice";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiCamera, FiRefreshCw, FiArrowLeft, FiArrowRight, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
-const TakeUserImagesComp: React.FC = () => {
+export const TakeUserImagesComp: React.FC = () => {
   const dispatch = useDispatch();
   const image = useSelector(selectUserImage);
   const userImagePreview = useSelector(selectUserImagePreview);
-  const latestUserImagePreview = useSelector(selectLatestUserImagePreview);
   const faceLiveness = useSelector(selectFaceLiveness);
   const faceLivenessScore = useSelector(selectFaceLivenessScore);
   const currentStep = useSelector(selectCurrentStep);
@@ -45,7 +46,6 @@ const TakeUserImagesComp: React.FC = () => {
     checkLiveness,
   } = useLivenessDetector();
 
-  // Start camera
   const startCamera = async () => {
     if (cameraOn) return;
     try {
@@ -64,7 +64,6 @@ const TakeUserImagesComp: React.FC = () => {
     }
   };
 
-  // Stop camera
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -72,7 +71,6 @@ const TakeUserImagesComp: React.FC = () => {
     if (videoRef.current) videoRef.current.srcObject = null;
   };
 
-  // Draw current video frame to canvas
   const captureFrameToCanvas = () => {
     const video = videoRef.current;
     if (!video) return null;
@@ -85,14 +83,12 @@ const TakeUserImagesComp: React.FC = () => {
     return { canvas, width: canvas.width, height: canvas.height };
   };
 
-  // Return a JPEG base64 of the current frame
   const captureImage = (): string | null => {
     const fc = captureFrameToCanvas();
     if (!fc) return null;
     return fc.canvas.toDataURL("image/jpeg", 0.92);
   };
 
-  // Take image and check liveness
   const handleTakePhoto = async () => {
     if (capturing || livenessLoading) return;
     setCapturing(true);
@@ -105,21 +101,17 @@ const TakeUserImagesComp: React.FC = () => {
         return;
       }
 
-      // 🔹 First time -> update both states
       if (!image) {
         dispatch(setImage(img));
         dispatch(setUserImagePreview(img));
         dispatch(setLatestUserImagePreview(img));
       } else {
-        // 🔹 On retake -> update only latest
         dispatch(setLatestUserImagePreview(img));
       }
 
       dispatch(resetFaceSimilarityCheck());
+      stopCamera();
 
-      stopCamera(); // Stop camera immediately after photo is taken
-
-      // Convert base64 to File for liveness check
       const arr = img.split(",");
       const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
       const bstr = atob(arr[1]);
@@ -128,14 +120,11 @@ const TakeUserImagesComp: React.FC = () => {
       while (n--) u8arr[n] = bstr.charCodeAt(n);
       const file = new File([u8arr], "user-image.jpg", { type: mime });
 
-      // Setup abort controller for liveness check
       const abortController = new AbortController();
       setLivenessAbortController(abortController);
 
-      // Await liveness check and only then update UI/state
       const livenessPromise = checkLiveness(file);
 
-      // Wait for liveness check, but allow abort
       let liveness;
       try {
         liveness = await Promise.race([
@@ -146,7 +135,6 @@ const TakeUserImagesComp: React.FC = () => {
         ]);
       } catch (e: any) {
         if (e.message === "Liveness check cancelled") {
-          // Reset liveness state
           dispatch(setFaceLiveness({ isLive: false, score: 0 }));
           toast.info("Liveness check cancelled. Please retake your photo.");
           setLivenessAbortController(null);
@@ -161,7 +149,6 @@ const TakeUserImagesComp: React.FC = () => {
       }
 
       setLivenessAbortController(null);
-
       const livenessResult = liveness as { isLive: boolean; score: number };
       dispatch(setFaceLiveness(livenessResult));
 
@@ -170,36 +157,23 @@ const TakeUserImagesComp: React.FC = () => {
       } else {
         toast.error("Face is NOT LIVE. Please retake the photo.");
       }
-    } catch (e: any) {
+    } catch {
       toast.error("Liveness check failed.");
     } finally {
       setCapturing(false);
     }
   };
 
-  // Cancel liveness check
-  const handleCancelLivenessCheck = () => {
-    if (livenessAbortController) {
-      livenessAbortController.abort();
-      dispatch(setFaceLiveness({ isLive: false, score: 0 }));
-      setLivenessAbortController(null);
-      setCapturing(false);
-    }
-  };
-
-  // Retake image
   const handleRetake = () => {
     dispatch(resetImages());
     startCamera();
   };
 
-  // Prev button
   const handlePrev = () => {
     stopCamera();
     dispatch(setCurrentStep(currentStep - 1));
   };
 
-  // Next button
   const handleNext = () => {
     stopCamera();
     dispatch(setCurrentStep(currentStep + 1));
@@ -216,125 +190,132 @@ const TakeUserImagesComp: React.FC = () => {
   const disableAll = capturing || livenessLoading;
 
   return (
-    <div className="bg-transparent flex flex-col justify-center items-center h-full rounded-lg relative w-full min-h-screen">
-      {/* Top navigation buttons at top corners */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
-        <button
-          type="button"
-          onClick={handlePrev}
-          disabled={disableAll}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            disableAll
-              ? "bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed"
-              : "bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700"
-          }
-        `}
-        >
-          <FiChevronLeft size={28} />
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={disableAll || !image || !faceLiveness}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition
-          ${
-            disableAll || !image || !faceLiveness
-              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-          }
-        `}
-        >
-          <FiChevronRight size={28} />
-        </button>
-      </div>
-      <h2 className="text-2xl font-bold mb-4 text-blue-700 dark:text-slate-100 mt-12 transition-colors">
-        Take Your Photo
-      </h2>
-
-      <div className="mb-4">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className={`rounded border border-gray-300 dark:border-slate-700 ${
-            cameraOn && !image ? "" : "hidden"
-          }`}
-          width={320}
-          height={240}
-        />
-        {!cameraOn && !image && (
-          <div className="text-sm text-gray-500 dark:text-slate-400 mt-2">Camera is off.</div>
-        )}
-      </div>
-
-      <div className="flex gap-4 mb-4">
-        {userImagePreview && (
-          <img
-            src={userImagePreview}
-            alt="User Preview"
-            className="w-32 h-32 object-cover rounded border border-gray-400 dark:border-slate-600"
-          />
-        )}
-      </div>
-
-      {livenessError && (
-        <div className="text-red-500 dark:text-red-400 mb-2">{livenessError}</div>
-      )}
-
-      {faceLiveness !== null && (
-        <div className="mb-4">
-          <div className="text-lg font-semibold dark:text-slate-100">
-            Face is{" "}
-            {faceLiveness ? (
-              <span className="text-green-600 dark:text-emerald-400">LIVE</span>
-            ) : (
-              <span className="text-red-600 dark:text-rose-400">NOT LIVE</span>
-            )}
+    <div className="w-full flex flex-col">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-100 dark:border-sky-900/40">
+            <FiCamera size={18} />
           </div>
-          <div className="text-sm text-gray-700 dark:text-slate-300">
-            Realness Score:{" "}
-            <span className="font-mono">{faceLivenessScore}/10</span>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              Biometric Live Capture
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Align your face in the camera viewport for passive liveness verification.
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
-      <div className="flex gap-4">
-        <button
-          type="button"
-          onClick={image ? handleRetake : handleTakePhoto}
-          disabled={disableAll}
-          className={`px-6 py-2 rounded shadow font-semibold ${
-            disableAll
-              ? "bg-blue-300 text-white cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
-          }`}
-        >
-          {image ? "Retake" : "Take Image"}
-        </button>
-        {livenessLoading && livenessAbortController && (
-          <button
-            type="button"
-            onClick={handleCancelLivenessCheck}
-            className="px-6 py-2 rounded shadow font-semibold bg-red-600 text-white hover:bg-red-700 border border-red-700 transition"
-          >
-            Cancel
-          </button>
+      {/* Camera / Photo Card */}
+      <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 flex flex-col items-center">
+        {/* Viewport Frame */}
+        <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-3xl overflow-hidden border-2 border-sky-500/30 bg-slate-950 shadow-inner flex items-center justify-center">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`w-full h-full object-cover scale-x-[-1] ${
+              cameraOn && !image ? "block" : "hidden"
+            }`}
+          />
+
+          {image && userImagePreview && (
+            <img
+              src={userImagePreview}
+              alt="Live Capture Preview"
+              className="w-full h-full object-cover"
+            />
+          )}
+
+          {/* Biometric circular guide mask */}
+          {cameraOn && !image && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="w-48 h-48 rounded-full border-2 border-dashed border-sky-400/60 animate-pulse" />
+              <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-scanline" />
+            </div>
+          )}
+
+          {!cameraOn && !image && (
+            <div className="text-center p-4">
+              <FiCamera size={36} className="mx-auto text-slate-600 mb-2" />
+              <p className="text-xs text-slate-400">Camera preview unavailable</p>
+              <button
+                type="button"
+                onClick={startCamera}
+                className="mt-2 text-xs text-sky-400 font-semibold underline"
+              >
+                Enable Camera
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Liveness Result Badge */}
+        {faceLiveness !== null && (
+          <div className="mt-5 flex items-center gap-2">
+            <Badge variant={faceLiveness ? "verified" : "danger"} size="md">
+              {faceLiveness ? "Face Verified: LIVE" : "Face Not Live: Spoof Suspected"}
+            </Badge>
+            <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              Score: {faceLivenessScore}/10
+            </span>
+          </div>
+        )}
+
+        {/* Camera action buttons */}
+        <div className="mt-6 flex items-center gap-3">
+          {image ? (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={handleRetake}
+              disabled={disableAll}
+              leftIcon={<FiRefreshCw size={16} />}
+            >
+              Retake Photo
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleTakePhoto}
+              disabled={disableAll || !cameraOn}
+              isLoading={disableAll}
+              leftIcon={<FiCamera size={18} />}
+            >
+              {disableAll ? "Analyzing Biometric Liveness..." : "Capture Photo"}
+            </Button>
+          )}
+        </div>
+
+        {livenessError && (
+          <div className="mt-3 text-xs text-rose-500 font-medium">
+            {livenessError}
+          </div>
         )}
       </div>
-      <div className="p-2 text-center mt-4 text-gray-500 dark:text-slate-400 text-sm">
-        {capturing
-          ? "Working..."
-          : livenessLoading
-          ? "Checking face liveness..."
-          : !image
-          ? "Position your face clearly in the frame and click 'Take Image'."
-          : "Image captured. You can retake or proceed if face is LIVE."}
-      </div>
 
-      <div className="mt-14 w-full flex flex-col items-center">
-        {/* Additional content or instructions can go here */}
+      {/* Wizard Action Footer */}
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrev}
+          disabled={disableAll}
+          leftIcon={<FiArrowLeft size={16} />}
+        >
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleNext}
+          disabled={disableAll || !image || !faceLiveness}
+          rightIcon={<FiArrowRight size={16} />}
+        >
+          Continue to Similarity Check
+        </Button>
       </div>
     </div>
   );

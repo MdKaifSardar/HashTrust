@@ -1,9 +1,12 @@
 "use client";
+
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentStep, selectCurrentStep } from "../../../redux/features/signUpSteps/stepSlice";
 import { setUserData, selectUserData } from "../../../redux/features/userData/userDataSlice";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiArrowLeft, FiArrowRight, FiLock, FiMail, FiKey } from "react-icons/fi";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 interface EmailPasswordState {
   email: string;
@@ -11,7 +14,7 @@ interface EmailPasswordState {
   confirmPassword: string;
 }
 
-const CreatePasswordComp: React.FC = () => {
+export const CreatePasswordComp: React.FC = () => {
   const dispatch = useDispatch();
   const currentStep = useSelector(selectCurrentStep);
   const userData = useSelector(selectUserData);
@@ -21,8 +24,6 @@ const CreatePasswordComp: React.FC = () => {
     password: "",
     confirmPassword: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,100 +44,101 @@ const CreatePasswordComp: React.FC = () => {
       setError("Please enter and confirm your password.");
       return;
     }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
-    // Save email and password to redux userData slice
     dispatch(setUserData({ email: form.email, password: form.password }));
     dispatch(setCurrentStep(currentStep + 1));
   };
 
+  const isValid = !!form.email && !!form.password && !!form.confirmPassword && form.password === form.confirmPassword;
+
   return (
-    <div className="bg-transparent flex flex-col justify-center items-center w-full min-h-screen h-full rounded-lg relative">
-      {/* Top navigation buttons at top corners */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
-        <button
-          type="button"
-          onClick={handlePrev}
-          className="flex items-center justify-center w-12 h-12 rounded-full font-semibold bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700 transition"
-        >
-          <FiChevronLeft size={28} />
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!form.email || !form.password || !form.confirmPassword}
-          className={`flex items-center justify-center w-12 h-12 rounded-full font-semibold transition ${
-            !form.email || !form.password || !form.confirmPassword
-              ? "bg-green-300 dark:bg-emerald-900/50 text-white dark:text-emerald-700 cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700 shadow-lg"
-          }`}
-        >
-          <FiChevronRight size={28} />
-        </button>
+    <div className="w-full flex flex-col">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-100 dark:border-sky-900/40">
+            <FiKey size={18} />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              Create Account Credentials
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Set up your primary login email and a secure encryption password.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="w-full max-w-md flex flex-col items-center justify-center ">
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-blue-100 dark:border-slate-800 px-8 py-10 w-full transition-colors">
-          <h2 className="text-3xl font-bold mb-6 text-blue-700 dark:text-slate-100 text-center transition-colors">Email &amp; Password</h2>
-          <form className="w-full flex flex-col gap-6">
-            <div>
-              <label className="block font-semibold mb-1 text-blue-700 dark:text-slate-200 text-sm transition-colors">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className="w-full border border-blue-200 dark:border-slate-700 rounded-lg px-5 py-3 focus:ring-2 focus:ring-blue-300 dark:focus:ring-cyan-500/50 focus:outline-none bg-blue-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base transition-colors"
-                autoComplete="email"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1 text-blue-700 dark:text-slate-200 text-sm transition-colors">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="w-full border border-blue-200 dark:border-slate-700 rounded-lg px-5 py-3 focus:ring-2 focus:ring-blue-300 dark:focus:ring-cyan-500/50 focus:outline-none bg-blue-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base transition-colors"
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 dark:text-cyan-400 font-semibold text-sm hover:underline"
-                  onClick={() => setShowPassword((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block font-semibold mb-1 text-blue-700 dark:text-slate-200 text-sm transition-colors">Confirm Password</label>
-              <div className="relative">
-                <input
-                  type={showConfirm ? "text" : "password"}
-                  name="confirmPassword"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full border border-blue-200 dark:border-slate-700 rounded-lg px-5 py-3 focus:ring-2 focus:ring-blue-300 dark:focus:ring-cyan-500/50 focus:outline-none bg-blue-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base transition-colors"
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 dark:text-cyan-400 font-semibold text-sm hover:underline"
-                  onClick={() => setShowConfirm((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showConfirm ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-            {error && <div className="text-red-600 dark:text-red-400 text-center text-sm font-semibold mt-2">{error}</div>}
-          </form>
-        </div>
+      {/* Form Fields */}
+      <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 space-y-4">
+        <Input
+          label="Email Address"
+          id="email"
+          name="email"
+          type="email"
+          placeholder="your.email@domain.com"
+          value={form.email}
+          onChange={handleChange}
+          leftIcon={<FiMail size={16} />}
+          required
+        />
+
+        <Input
+          label="Account Password"
+          id="password"
+          name="password"
+          type="password"
+          placeholder="At least 6 characters"
+          value={form.password}
+          onChange={handleChange}
+          leftIcon={<FiLock size={16} />}
+          required
+        />
+
+        <Input
+          label="Confirm Password"
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          placeholder="Re-enter password"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          leftIcon={<FiLock size={16} />}
+          required
+        />
+
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-xs text-rose-600 dark:text-rose-400 font-medium">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Action Footer */}
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrev}
+          leftIcon={<FiArrowLeft size={16} />}
+        >
+          Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleNext}
+          disabled={!isValid}
+          rightIcon={<FiArrowRight size={16} />}
+        >
+          Review Data & Mint
+        </Button>
       </div>
     </div>
   );

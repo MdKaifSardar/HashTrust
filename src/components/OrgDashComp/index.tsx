@@ -1,34 +1,35 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { authenticateOrgWithSessionCookie } from "@/lib/actions/org.actions";
 import Loader from "@/components/Loader";
 import { toast, ToastContainer } from "react-toastify";
+import Link from "next/link";
 import OrgSideMenuComp from "./_components/OrgSideMenuComp";
 import OrgDetailsComp from "./_components/OrgDetailsComp";
 import ApiKeyComp from "./_components/ApiKeyComp";
 import UsageComp from "./_components/UsageComp";
 import ApiKeyDoc from "./_components/ApiKeyDoc";
+import { FiLock, FiBriefcase } from "react-icons/fi";
+import Button from "@/components/ui/Button";
 
-const OrgDashboardComp: React.FC = () => {
+export const OrgDashboardComp: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [organisation, setOrganisation] = useState<any>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [selected, setSelected] = useState("Details");
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const verifyOrg = async () => {
       setLoading(true);
       setAuthError(null);
       try {
-        // Get session cookie from browser if available
         const sessionCookie = document.cookie
           .split(";")
           .map((row) => row.trim())
           .find((row) => row.startsWith("session="))
           ?.slice("session=".length);
 
-        // Server action will check sessionCookie or fallback to HTTP headers cookies()
         const orgRes = await authenticateOrgWithSessionCookie(sessionCookie);
         if (orgRes.ok && orgRes.organisation) {
           setOrganisation(orgRes.organisation);
@@ -50,20 +51,9 @@ const OrgDashboardComp: React.FC = () => {
     verifyOrg();
   }, []);
 
-  // Responsive: menu closed by default on small screens
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) setMenuOpen(false);
-      else setMenuOpen(true);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors">
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
         <Loader />
       </div>
     );
@@ -71,49 +61,49 @@ const OrgDashboardComp: React.FC = () => {
 
   if (!organisation) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors p-4">
         <ToastContainer />
-        <div className="text-xl text-red-600 dark:text-red-400 font-semibold mb-2">
-          Not authenticated
-        </div>
-        {authError && (
-          <div className="text-xs sm:text-sm text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900 rounded-lg px-4 py-2 mb-4 max-w-md text-center font-mono">
-            {authError}
+        <div className="max-w-md w-full glass-panel-elevated p-8 rounded-3xl text-center">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 mx-auto flex items-center justify-center mb-4">
+            <FiLock size={22} />
           </div>
-        )}
-        <div className="text-gray-600 dark:text-slate-300 mb-2">
-          Please{" "}
-          <a
-            href="/pages/auth/sign-up/organisation"
-            className="text-blue-600 dark:text-cyan-400 underline font-semibold"
-          >
-            sign up
-          </a>{" "}
-          or{" "}
-          <a
-            href="/pages/auth/login/organisation"
-            className="text-blue-600 dark:text-cyan-400 underline font-semibold"
-          >
-            log in
-          </a>{" "}
-          to access your dashboard.
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            Authentication Required
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
+            {authError || "Please sign in to access your organization dashboard and API credentials."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/pages/auth/login/organisation">
+              <Button variant="success" size="md">
+                Organisation Sign In
+              </Button>
+            </Link>
+            <Link href="/pages/auth/sign-up/organisation">
+              <Button variant="outline" size="md">
+                Register Organisation
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 dark:bg-slate-950 relative flex transition-colors">
-      <ToastContainer />
-      {/* Sidebar is now handled inside OrgSideMenuComp */}
+    <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 relative flex transition-colors duration-200">
+      <ToastContainer position="top-right" />
+
+      {/* Sidebar Navigation */}
       <OrgSideMenuComp
         organisation={organisation}
         selected={selected}
         setSelected={setSelected}
       />
-      {/* Main Content */}
-      <div className="flex flex-col items-center justify-start h-fit p-1 sm:p-4 transition-all duration-300 flex-1 w-full md:ml-64 md:w-[calc(100vw-16rem)]">
-        <div className="w-full h-full flex flex-col justify-start items-center">
+
+      {/* Main Content Area */}
+      <main className="flex-1 w-full md:ml-64 md:w-[calc(100%-16rem)] p-6 sm:p-10 min-h-screen transition-all duration-200">
+        <div className="max-w-5xl mx-auto">
           {selected === "Details" && (
             <OrgDetailsComp organisation={organisation} />
           )}
@@ -125,13 +115,17 @@ const OrgDashboardComp: React.FC = () => {
           )}
           {selected === "API Documentation" && <ApiKeyDoc />}
           {selected === "Settings" && (
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-lg border border-blue-100 dark:border-slate-800 shadow-sm w-full h-full flex flex-col justify-center items-center transition-colors">
-              <h2 className="text-xl font-bold text-blue-700 dark:text-slate-100 mb-4">Settings</h2>
-              <div className="text-gray-600 dark:text-slate-400">Settings options go here.</div>
+            <div className="glass-panel p-8 rounded-3xl text-center space-y-3">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Enterprise Settings
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                Organization member scopes, webhooks, and billing settings are managed under your enterprise tier.
+              </p>
             </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

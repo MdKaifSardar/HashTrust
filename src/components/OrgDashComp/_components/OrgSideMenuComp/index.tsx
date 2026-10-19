@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import { ORG_SIDE_MENU } from "@/utils/data/OrgSideMenu";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiMenu, FiX } from "react-icons/fi";
+import { FiMenu, FiX, FiBriefcase, FiKey, FiActivity, FiBookOpen, FiSettings } from "react-icons/fi";
 import ThemeToggle from "@/components/ThemeToggle";
 
 interface OrgSideMenuCompProps {
@@ -14,7 +16,15 @@ interface OrgSideMenuCompProps {
   setSelected: (v: string) => void;
 }
 
-const OrgSideMenuComp: React.FC<OrgSideMenuCompProps> = ({
+const MENU_ICONS: Record<string, React.ReactNode> = {
+  Details: <FiBriefcase size={16} />,
+  "API Key": <FiKey size={16} />,
+  Traffic: <FiActivity size={16} />,
+  "API Documentation": <FiBookOpen size={16} />,
+  Settings: <FiSettings size={16} />,
+};
+
+export const OrgSideMenuComp: React.FC<OrgSideMenuCompProps> = ({
   organisation,
   selected,
   setSelected,
@@ -35,7 +45,7 @@ const OrgSideMenuComp: React.FC<OrgSideMenuCompProps> = ({
 
   return (
     <>
-      {/* Only show toggle button and AnimatePresence for mobile */}
+      {/* Mobile Drawer */}
       {isMobile && (
         <>
           <AnimatePresence>
@@ -45,98 +55,126 @@ const OrgSideMenuComp: React.FC<OrgSideMenuCompProps> = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[99]"
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[99]"
                   onClick={() => setMenuOpen(false)}
                 />
                 <motion.div
-                  initial={{ x: -220, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -220, opacity: 0 }}
+                  initial={{ x: -260 }}
+                  animate={{ x: 0 }}
+                  exit={{ x: -260 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="fixed top-0 left-0 z-[900] h-screen w-[65vw] max-w-[16rem] bg-white dark:bg-slate-900 border-r border-blue-100 dark:border-slate-800 shadow-xl transition-colors flex flex-col justify-between"
+                  className="fixed top-0 left-0 z-[900] h-screen w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-white/10 shadow-2xl flex flex-col justify-between p-6"
                 >
-                  <button
-                    className="absolute top-6 -right-10 z-[102] w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-colors duration-200 bg-blue-600 hover:bg-red-500 active:bg-red-700 focus:outline-none"
-                    aria-label="Close menu"
-                    type="button"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    <FiX size={24} className="text-white" />
-                  </button>
-                  <aside className="w-full flex flex-col py-8 px-4">
-                    <div className="mb-8">
-                      <div className="text-lg font-bold text-blue-700 dark:text-slate-100">
-                        {organisation.orgName}
+                  <div className="flex items-center justify-between pb-6 border-b border-slate-200 dark:border-white/10">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+                        <FiBriefcase size={16} />
                       </div>
+                      <span className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-[150px]">
+                        {organisation.orgName}
+                      </span>
                     </div>
-                    <nav className="flex flex-col gap-2">
-                      {ORG_SIDE_MENU.map((item) => (
+                    <button
+                      type="button"
+                      onClick={() => setMenuOpen(false)}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    >
+                      <FiX size={20} />
+                    </button>
+                  </div>
+
+                  <nav className="flex flex-col gap-1.5 py-6 flex-1">
+                    {ORG_SIDE_MENU.map((item) => {
+                      const isActive = selected === item.label;
+                      return (
                         <button
                           key={item.label}
-                          className={`text-left px-3 py-2 rounded font-semibold transition ${
-                            selected === item.label
-                              ? "bg-blue-100 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-400"
-                              : "text-gray-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800"
-                          }`}
                           onClick={() => {
                             setSelected(item.label);
                             setMenuOpen(false);
                           }}
+                          className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                            isActive
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"
+                          }`}
                         >
-                          {item.label}
+                          {MENU_ICONS[item.label] || <FiBriefcase size={16} />}
+                          <span>{item.label}</span>
                         </button>
-                      ))}
-                    </nav>
-                  </aside>
-                  <div className="p-4 border-t border-blue-100 dark:border-slate-800 flex justify-center">
+                      );
+                    })}
+                  </nav>
+
+                  <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
+                    <span className="text-xs text-slate-400">Theme</span>
                     <ThemeToggle />
                   </div>
                 </motion.div>
               </>
             )}
           </AnimatePresence>
+
           {!menuOpen && (
             <button
-              className="fixed top-16 left-4 z-[102] w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-colors duration-200 bg-blue-600 hover:bg-blue-700 active:bg-blue-900 focus:outline-none"
-              aria-label="Open menu"
               type="button"
               onClick={() => setMenuOpen(true)}
+              className="fixed bottom-6 right-6 z-[100] p-3.5 rounded-2xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 hover:scale-105 transition-all"
+              aria-label="Open sidebar menu"
             >
-              <FiMenu size={24} className="text-white" />
+              <FiMenu size={22} />
             </button>
           )}
         </>
       )}
-      {/* Always show fixed sidebar for desktop */}
+
+      {/* Desktop Fixed Sidebar */}
       {!isMobile && (
-        <div className="fixed bg-white dark:bg-slate-900 top-0 left-0 z-[50] h-screen w-64 border-r border-blue-100 dark:border-slate-800 shadow-lg flex flex-col justify-between transition-colors">
-          <aside className="w-full flex flex-col py-[5rem] px-6">
-            <div className="mb-8">
-              <div className="text-xl font-bold text-blue-700 dark:text-slate-100">
-                {organisation.orgName}
+        <aside className="w-64 fixed top-16 bottom-0 left-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/80 dark:border-white/10 p-5 flex flex-col justify-between z-40 transition-colors">
+          <div>
+            {/* Org Profile Header */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 mb-6 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                {organisation.orgName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {organisation.orgName}
+                </p>
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Verified Enterprise
+                </p>
               </div>
             </div>
-            <nav className="flex flex-col gap-2">
-              {ORG_SIDE_MENU.map((item) => (
-                <button
-                  key={item.label}
-                  className={`text-left px-4 py-2 rounded font-semibold transition ${
-                    selected === item.label
-                      ? "bg-blue-100 dark:bg-cyan-500/10 text-blue-700 dark:text-cyan-400"
-                      : "text-gray-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800"
-                  }`}
-                  onClick={() => setSelected(item.label)}
-                >
-                  {item.label}
-                </button>
-              ))}
+
+            {/* Nav Menu */}
+            <nav className="flex flex-col gap-1">
+              {ORG_SIDE_MENU.map((item) => {
+                const isActive = selected === item.label;
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => setSelected(item.label)}
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm"
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"
+                    }`}
+                  >
+                    {MENU_ICONS[item.label] || <FiBriefcase size={16} />}
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </nav>
-          </aside>
-          <div className="p-6 border-t border-blue-100 dark:border-slate-800 flex justify-center">
+          </div>
+
+          <div className="pt-4 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-medium">Dark Mode</span>
             <ThemeToggle />
           </div>
-        </div>
+        </aside>
       )}
     </>
   );

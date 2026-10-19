@@ -13,27 +13,19 @@ import { ToastContainer } from "react-toastify";
 import SideProgressMenu from "./_components/SideProgressMenu";
 import MobileTopProgressBar from "./_components/MobileTopProgressBar";
 
-const steps = [
-  { label: "ID Document" },
-  { label: "Extract Data" },
-  { label: "User Images" },
-  { label: "Face Similarity" },
-  { label: "Email and Password" },
-  { label: "Review Data" },
-];
-
-const SignUpFormComponent: React.FC = () => {
+export const SignUpFormComponent: React.FC = () => {
   const currentStep = useSelector(selectCurrentStep);
 
   return (
-    <div className="w-full h-full flex flex-col sm:flex-row bg-gray-100 dark:bg-slate-950 transition-colors">
-      {/* SideProgressMenu: fixed position, 20% width on desktop */}
+    <div className="w-full min-h-screen flex flex-col sm:flex-row bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      {/* SideProgressMenu: fixed on desktop */}
       <SideProgressMenu />
       <MobileTopProgressBar />
-      {/* Step Content: 80% width on desktop, full width on mobile */}
-      <div className=" p-[.5rem] md:p-[1rem] flex-1 flex flex-col items-center justify-start h-full ml-0 sm:ml-[30%] lg:ml-[20%] w-full sm:w-[calc(100vw-30%)] lg:w-[calc(100vw-20%)]">
-        <div className=" w-full h-full flex flex-col justify-center items-center rounded-2xl shadow-lg dark:shadow-cyan-950/20 flex-1">
-          <ToastContainer />
+
+      {/* Main Step Workspace */}
+      <main className="flex-1 ml-0 sm:ml-[30%] lg:ml-[22%] w-full sm:w-[calc(100%-30%)] lg:w-[calc(100%-22%)] min-h-screen p-4 sm:p-8 lg:p-12 flex flex-col justify-center items-center">
+        <ToastContainer position="top-right" />
+        <div className="w-full max-w-2xl glass-panel-elevated p-6 sm:p-10 rounded-3xl relative">
           {currentStep === 0 && <UploadIDComp />}
           {currentStep === 1 && <DataExtractDocComp />}
           {currentStep === 2 && <TakeUserImagesComp />}
@@ -41,7 +33,7 @@ const SignUpFormComponent: React.FC = () => {
           {currentStep === 4 && <CreatePasswordComp />}
           {currentStep === 5 && <ReviewDataComp />}
         </div>
-      </div>
+      </main>
     </div>
   );
 };

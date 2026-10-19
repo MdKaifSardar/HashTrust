@@ -1,4 +1,8 @@
+"use client";
+
 import React from "react";
+import { FiShield } from "react-icons/fi";
+import Button from "@/components/ui/Button";
 
 interface ReviewDataModalProps {
   open: boolean;
@@ -9,35 +13,43 @@ interface ReviewDataModalProps {
   submitting: boolean;
 }
 
-const ReviewDataModal: React.FC<ReviewDataModalProps> = ({
+export const ReviewDataModal: React.FC<ReviewDataModalProps> = ({
   open,
   onClose,
   onConfirm,
   submitting,
 }) => {
   if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 rounded-lg p-6 w-full max-w-md shadow-xl border border-transparent dark:border-slate-800 transition-colors">
-        <h3 className="text-xl font-bold mb-4 text-blue-700 dark:text-slate-100">Confirm Submission</h3>
-        <div className="mb-4 text-gray-700 dark:text-slate-300">
-          Are you sure you want to submit your data? This action cannot be undone.
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-slate-200 dark:border-white/10 text-center space-y-4">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 mx-auto flex items-center justify-center">
+          <FiShield size={22} />
         </div>
-        <div className="flex gap-4 justify-end">
-          <button
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+          Confirm Blockchain Minting
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          Your biometric signature and verification proof hash will be permanently anchored to the Ethereum Sepolia smart contract. This action creates your self-sovereign identity passport.
+        </p>
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <Button
+            variant="outline"
+            size="md"
             onClick={onClose}
-            className="px-4 py-2 rounded bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-300 dark:hover:bg-slate-700 font-semibold transition"
             disabled={submitting}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="success"
+            size="md"
             onClick={onConfirm}
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 font-semibold transition shadow"
-            disabled={submitting}
+            isLoading={submitting}
           >
-            {submitting ? "Submitting..." : "Confirm"}
-          </button>
+            Confirm & Mint
+          </Button>
         </div>
       </div>
     </div>

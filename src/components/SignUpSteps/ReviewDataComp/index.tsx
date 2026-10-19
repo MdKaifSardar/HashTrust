@@ -1,7 +1,7 @@
 "use client";
+
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
 import { selectUserData } from "../../../redux/features/userData/userDataSlice";
 import { selectFaceImage } from "../../../redux/features/idUpload/idUploadSlice";
 import {
@@ -22,15 +22,12 @@ import {
   selectPreviewUrl,
   selectIdentityDocumentFile,
 } from "../../../redux/features/idUpload/idUploadSlice";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiArrowLeft, FiShield, FiCheckCircle, FiCheck, FiLock } from "react-icons/fi";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
-const labelClass = "font-semibold text-gray-700 dark:text-slate-300";
-const valueClass = "text-gray-800 dark:text-slate-100";
-const sectionTitleClass = "font-semibold text-lg mb-2 text-blue-700 dark:text-cyan-400";
-
-const ReviewDataComp: React.FC = () => {
+export const ReviewDataComp: React.FC = () => {
   const dispatch = useDispatch();
-  const router = useRouter();
   const userData = useSelector(selectUserData);
   const idFaceImage = useSelector(selectFaceImage);
   const userImage = useSelector(selectUserImagePreview);
@@ -44,7 +41,6 @@ const ReviewDataComp: React.FC = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handlePrev = () => {
     dispatch(setCurrentStep(currentStep - 1));
@@ -97,7 +93,7 @@ const ReviewDataComp: React.FC = () => {
         previewUrl,
         verificationStatus,
         "user",
-        userData.idNumber || "" // pass Aadhaar number
+        userData.idNumber || ""
       );
       setShowModal(false);
       if (result.sessionCookie) {
@@ -105,14 +101,14 @@ const ReviewDataComp: React.FC = () => {
         document.cookie = `session=${result.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
         }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
-        toast.success(result.message || "Sign up successful!");
+        toast.success(result.message || "Identity proof created successfully!");
         setTimeout(() => {
           window.location.href = "/pages/user/dashboard";
         }, 1000);
       } else if (result.message) {
         toast.error(result.message);
       } else {
-        toast.error("Sign up failed.");
+        toast.error("Verification failed.");
       }
     } catch (e: any) {
       toast.error("Failed to submit data: " + (e?.message || "Unknown error"));
@@ -121,249 +117,141 @@ const ReviewDataComp: React.FC = () => {
     }
   };
 
-  return (
-    <>
-      <ToastContainer />
-      <div className="pt-16 sm:py-0 min-h-screen justify-center items-center h-full flex flex-col gap-8 w-full relative">
-        {/* Top navigation buttons at top corners */}
-        <div className="absolute top-0 left-0 w-full flex justify-between items-center px-2 py-2 z-10">
-          <button
-            type="button"
-            onClick={handlePrev}
-            className="flex items-center justify-center w-12 h-12 rounded-full font-semibold bg-gray-200 dark:bg-slate-800 text-blue-700 dark:text-cyan-400 hover:bg-gray-300 dark:hover:bg-slate-700 transition"
-          >
-            <FiChevronLeft size={28} />
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="flex items-center justify-center w-32 h-12 rounded-full font-semibold bg-green-600 text-white hover:bg-green-700 text-base shadow-lg transition"
-          >
-            Submit
-          </button>
-        </div>
+  const displayUserImage = latestUserImage || userImage;
 
-        <div className="sm:p-0 p-4 w-full flex flex-col justify-center items-center">
-          <h2 className="text-2xl font-bold mb-2 text-blue-700 dark:text-slate-100 text-center sm:text-left transition-colors">
-            Review Your Data
-          </h2>
-          <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-xl shadow border border-blue-100 dark:border-slate-800 flex flex-col sm:flex-row gap-8 sm:gap-12 px-4 sm:px-8 py-4 sm:py-8 transition-colors">
-            {/* Left: Personal Info & Address */}
-            <div className="w-full flex flex-col gap-6">
-              <div>
-                <h3 className={sectionTitleClass}>Personal Info</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>Name:</span>
-                    <span className={valueClass}>
-                      {userData.name || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>Date of Birth:</span>
-                    <span className={valueClass}>
-                      {userData.dob || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>Phone:</span>
-                    <span className={valueClass}>
-                      {userData.phone || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>Aadhaar Number:</span>
-                    <span className={valueClass}>
-                      {userData.idNumber || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className={sectionTitleClass}>Address</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>PO:</span>
-                    <span className={valueClass}>
-                      {userData.address?.po || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>District:</span>
-                    <span className={valueClass}>
-                      {userData.address?.district || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>State:</span>
-                    <span className={valueClass}>
-                      {userData.address?.state || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={labelClass}>Pin:</span>
-                    <span className={valueClass}>
-                      {userData.address?.pin || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {/* Password and Email */}
-              {userData.password && (
-                <div>
-                  <h3 className={sectionTitleClass}>
-                    Password and Email Address
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono select-all text-gray-700 dark:text-slate-300">
-                      Password:{" "}
-                      {showPassword
-                        ? userData.password
-                        : "•".repeat(userData.password.length)}
-                    </span>
-                    <button
-                      type="button"
-                      className="text-blue-600 dark:text-cyan-400 underline text-sm"
-                      onClick={() => setShowPassword((v) => !v)}
-                    >
-                      {showPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  <div className="mt-2 text-gray-700 dark:text-slate-300 text-sm">
-                    <span className={labelClass}>Email:</span>{" "}
-                    <span className={valueClass}>
-                      {userData.email || (
-                        <span className="text-red-500">Not available</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* Right: Images & Verification */}
-            <div className="w-full flex flex-col gap-6">
-              <div>
-                <h3 className={sectionTitleClass}>Images</h3>
-                <div className="flex gap-8 justify-center">
-                  <div className="flex flex-col items-center">
-                    <span className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                      ID Card Face
-                    </span>
-                    {idFaceImage ? (
-                      <img
-                        src={idFaceImage}
-                        alt="ID Face"
-                        className="w-24 h-24 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-sm text-gray-600 dark:text-slate-400 mb-1">
-                      Latest User Photo
-                    </span>
-                    {latestUserImage ? (
-                      <img
-                        src={latestUserImage}
-                        alt="User"
-                        className="w-24 h-24 object-cover rounded border border-gray-300 dark:border-slate-700 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 bg-gray-100 dark:bg-slate-800 rounded border border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className={sectionTitleClass}>Verification Status</h3>
-                <div className="space-y-2">
-                  <div className="flex flex-col gap-2">
-                    {/* Face Liveness */}
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-700 dark:text-slate-300 text-base">
-                        Face Liveness:
-                      </span>
-                      <span
-                        className={`font-semibold text-base ${
-                          faceLiveness === null
-                            ? "text-gray-500"
-                            : faceLiveness
-                            ? "text-green-600 dark:text-emerald-400"
-                            : "text-red-600 dark:text-rose-400"
-                        }`}
-                      >
-                        {faceLiveness === null
-                          ? "Not checked"
-                          : faceLiveness
-                          ? "LIVE"
-                          : "NOT LIVE"}
-                      </span>
-                      {faceLivenessScore !== null && (
-                        <span className="text-base font-semibold text-green-600 dark:text-emerald-400">
-                          (Score: {faceLivenessScore}/10)
-                        </span>
-                      )}
-                    </div>
-                    {/* Face Similarity */}
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-700 dark:text-slate-300 text-base">
-                        Face Similarity:
-                      </span>
-                      <span
-                        className={`font-semibold text-base ${
-                          similarityScore === null
-                            ? "text-gray-500"
-                            : isMatch
-                            ? "text-green-600 dark:text-emerald-400"
-                            : "text-red-600 dark:text-rose-400"
-                        }`}
-                      >
-                        {similarityScore === null
-                          ? "Not checked"
-                          : isMatch
-                          ? `Match (${similarityScore})`
-                          : `No Match (${similarityScore})`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+  return (
+    <div className="w-full flex flex-col">
+      <ToastContainer position="top-right" />
+
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/40">
+            <FiShield size={18} />
           </div>
-          {showModal && (
-            <ReviewDataModal
-              open={showModal}
-              onClose={handleModalClose}
-              onConfirm={handleModalConfirm}
-              userData={userData}
-              userImage={latestUserImage || userImage}
-              submitting={submitting}
-            />
-          )}
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+              Review & Anchor Identity
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Verify your information before generating your cryptographic identity proof.
+            </p>
+          </div>
         </div>
       </div>
-    </>
+
+      {/* Digital Identity Passport Card */}
+      <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-white via-sky-50/20 to-emerald-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 border border-slate-200 dark:border-white/10 shadow-lg relative overflow-hidden">
+        {/* Hologram top edge */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400" />
+
+        {/* Passport Top: Photo & Basic Details */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-6 border-b border-slate-200/80 dark:border-white/10">
+          <div className="relative">
+            {displayUserImage ? (
+              <img
+                src={displayUserImage}
+                alt="User Biometric Avatar"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-sky-500 shadow-md"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-2xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-400">
+                No Photo
+              </div>
+            )}
+            <div className="absolute -bottom-2 -right-2 p-1.5 rounded-xl bg-emerald-500 text-white shadow">
+              <FiCheck size={14} />
+            </div>
+          </div>
+
+          <div className="flex-1 text-center sm:text-left">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
+                {userData.name || "Verified Holder"}
+              </h3>
+              <Badge variant="verified" size="sm">
+                Self-Sovereign
+              </Badge>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-mono">
+              {userData.email}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Gov ID: <strong className="font-mono text-slate-800 dark:text-slate-200">{userData.idNumber}</strong> • DOB: {userData.dob}
+            </p>
+          </div>
+        </div>
+
+        {/* Status Verification Pill Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-6 border-b border-slate-200/80 dark:border-white/10">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-white/5 flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Biometric Liveness
+            </span>
+            <Badge variant={faceLiveness ? "verified" : "danger"} size="sm">
+              {faceLiveness ? `LIVE (${faceLivenessScore}/10)` : "NOT LIVE"}
+            </Badge>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-white/5 flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              1:1 Biometric Match
+            </span>
+            <Badge variant={isMatch ? "verified" : "danger"} size="sm">
+              {isMatch ? `MATCHED (${similarityScore}%)` : "FAILED"}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Address and ID Details */}
+        <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div>
+            <span className="font-semibold text-slate-400 block mb-1">Registered Address</span>
+            <p className="text-slate-700 dark:text-slate-300 font-medium">
+              {userData.address?.po}, {userData.address?.district}, {userData.address?.state} - {userData.address?.pin}
+            </p>
+          </div>
+          <div>
+            <span className="font-semibold text-slate-400 block mb-1">Phone Contact</span>
+            <p className="text-slate-700 dark:text-slate-300 font-medium">
+              {userData.phone || "Not specified"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Footer */}
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrev}
+          disabled={submitting}
+          leftIcon={<FiArrowLeft size={16} />}
+        >
+          Back
+        </Button>
+        <Button
+          variant="success"
+          size="lg"
+          onClick={handleSubmit}
+          isLoading={submitting}
+          rightIcon={<FiCheckCircle size={18} />}
+        >
+          Confirm & Mint Identity Proof
+        </Button>
+      </div>
+
+      {showModal && (
+        <ReviewDataModal
+          open={showModal}
+          onClose={handleModalClose}
+          onConfirm={handleModalConfirm}
+          userData={userData}
+          userImage={displayUserImage}
+          submitting={submitting}
+        />
+      )}
+    </div>
   );
 };
 
