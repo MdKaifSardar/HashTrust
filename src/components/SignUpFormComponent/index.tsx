@@ -3,8 +3,7 @@
 import React from "react";
 import UploadIDComp from "../SignUpSteps/UploadIDComp";
 import DataExtractDocComp from "../SignUpSteps/DataExtractDocComp";
-import TakeUserImagesComp from "../SignUpSteps/TakeUserImagesComp";
-import FaceSimilarityCheck from "../SignUpSteps/FaceSimilarityCheck";
+import BiometricVerificationComp from "../SignUpSteps/BiometricVerificationComp";
 import CreatePasswordComp from "../SignUpSteps/CreatePasswordComp";
 import ReviewDataComp from "../SignUpSteps/ReviewDataComp";
 import { useSelector } from "react-redux";
@@ -26,10 +25,9 @@ export const SignUpFormComponent: React.FC = () => {
         <div className="w-full max-w-2xl glass-panel-elevated p-6 sm:p-10 rounded-3xl relative">
           {currentStep === 0 && <UploadIDComp />}
           {currentStep === 1 && <DataExtractDocComp />}
-          {currentStep === 2 && <TakeUserImagesComp />}
-          {currentStep === 3 && <FaceSimilarityCheck />}
-          {currentStep === 4 && <CreatePasswordComp />}
-          {currentStep === 5 && <ReviewDataComp />}
+          {currentStep === 2 && <BiometricVerificationComp />}
+          {currentStep === 3 && <CreatePasswordComp />}
+          {currentStep === 4 && <ReviewDataComp />}
         </div>
       </main>
     </div>

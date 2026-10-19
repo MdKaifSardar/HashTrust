@@ -10,8 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 const steps = [
   { label: "ID Document", desc: "Upload official ID" },
   { label: "Extract Data", desc: "OCR text verification" },
-  { label: "User Images", desc: "Live webcam capture" },
-  { label: "Face Similarity", desc: "Liveness & 1:1 match" },
+  { label: "Biometrics", desc: "Liveness & ID face match" },
   { label: "Credentials", desc: "Email and password" },
   { label: "Review & Mint", desc: "Smart contract proof" },
 ];

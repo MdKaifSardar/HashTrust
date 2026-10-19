@@ -10,8 +10,7 @@ import { FiArrowLeft, FiShield } from "react-icons/fi";
 const steps = [
   "ID Document",
   "Extract Data",
-  "User Images",
-  "Face Similarity",
+  "Biometrics",
   "Credentials",
   "Review & Mint",
 ];
