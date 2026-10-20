@@ -8,8 +8,16 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { FiMail, FiLock, FiArrowLeft, FiShield } from "react-icons/fi";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { useSearchParams } from "next/navigation";
 
 export const UserLoginFormComponent: React.FC = () => {
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get("redirect");
+  const targetRedirect =
+    rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/pages/user/dashboard";
+
   const [form, setForm] = useState({ email: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,7 +37,7 @@ export const UserLoginFormComponent: React.FC = () => {
         }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
         toast.success(res.message || "Login successful!");
         setTimeout(() => {
-          window.location.href = "/pages/user/dashboard";
+          window.location.href = targetRedirect;
         }, 1000);
       } else {
         toast.error(res.message || "Login failed.");

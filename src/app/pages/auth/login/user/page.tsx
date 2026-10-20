@@ -1,6 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import UserLoginFormComponent from "@/components/UserLoginFormComponent";
+import Loader from "@/components/Loader";
 
 export default function LoginPage() {
   const [shouldRender, setShouldRender] = useState(false);
@@ -23,7 +24,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center w-full bg-auth-gradient dark:bg-slate-950 transition-colors duration-200 relative">
-      <UserLoginFormComponent />
+      <Suspense fallback={<Loader />}>
+        <UserLoginFormComponent />
+      </Suspense>
     </div>
   );
 }

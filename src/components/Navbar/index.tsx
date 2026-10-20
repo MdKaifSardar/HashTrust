@@ -138,18 +138,6 @@ export const Navbar = ({
           >
             Features
           </Link>
-          <Link
-            href="/pages/demo"
-            className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
-          >
-            Similarity Demo
-          </Link>
-          <Link
-            href="/pages/demo-face-liveness"
-            className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
-          >
-            Liveness Demo
-          </Link>
         </div>
 
         {/* Right Section: Auth & Theme Toggle */}

@@ -106,22 +106,6 @@ export const SideMenu = ({
           <span>Features</span>
           <FiArrowRight size={16} className="text-slate-400" />
         </Link>
-        <Link
-          href="/pages/demo"
-          onClick={() => setOpen(false)}
-          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
-        >
-          <span>Face Similarity Demo</span>
-          <FiArrowRight size={16} className="text-slate-400" />
-        </Link>
-        <Link
-          href="/pages/demo-face-liveness"
-          onClick={() => setOpen(false)}
-          className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium transition-colors"
-        >
-          <span>Silent Liveness Demo</span>
-          <FiArrowRight size={16} className="text-slate-400" />
-        </Link>
       </nav>
 
       {/* Auth Actions Section */}

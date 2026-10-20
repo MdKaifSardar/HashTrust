@@ -12,44 +12,93 @@ import UsageComp from "./_components/UsageComp";
 import ApiKeyDoc from "./_components/ApiKeyDoc";
 import { FiLock, FiBriefcase } from "react-icons/fi";
 import Button from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
 
 export const OrgDashboardComp: React.FC = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [organisation, setOrganisation] = useState<any>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [selected, setSelected] = useState("Details");
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  const startAutoRedirect = (errorMsg: string) => {
+    setOrganisation(null);
+    setAuthError(errorMsg);
+    setCountdown(3);
+  };
+
+  const verifyOrg = async () => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const sessionCookie = document.cookie
+        .split(";")
+        .map((row) => row.trim())
+        .find((row) => row.startsWith("session="))
+        ?.slice("session=".length);
+
+      if (!sessionCookie) {
+        startAutoRedirect("Authentication required. No active session found.");
+        return;
+      }
+
+      const orgRes = await authenticateOrgWithSessionCookie(sessionCookie);
+      if (orgRes.ok && orgRes.organisation) {
+        setOrganisation(orgRes.organisation);
+      } else {
+        const errorMsg = orgRes.message || "Failed to fetch organisation details.";
+        toast.error(errorMsg);
+        startAutoRedirect(errorMsg);
+      }
+    } catch (e: any) {
+      const errorMsg = e?.message || "Authentication failed.";
+      toast.error(errorMsg);
+      startAutoRedirect(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const verifyOrg = async () => {
-      setLoading(true);
-      setAuthError(null);
-      try {
-        const sessionCookie = document.cookie
-          .split(";")
-          .map((row) => row.trim())
-          .find((row) => row.startsWith("session="))
-          ?.slice("session=".length);
+    verifyOrg();
 
-        const orgRes = await authenticateOrgWithSessionCookie(sessionCookie);
-        if (orgRes.ok && orgRes.organisation) {
-          setOrganisation(orgRes.organisation);
-        } else {
-          setOrganisation(null);
-          const errorMsg = orgRes.message || "Failed to fetch organisation details.";
-          setAuthError(errorMsg);
-          toast.error(errorMsg);
-        }
-      } catch (e: any) {
-        const errorMsg = e?.message || "Authentication failed.";
-        setOrganisation(null);
-        setAuthError(errorMsg);
-        toast.error(errorMsg);
-      } finally {
-        setLoading(false);
+    // Multi-tab and cross-component session synchronization
+    const handleSessionChanged = () => {
+      const hasSession = document.cookie
+        .split(";")
+        .map((row) => row.trim())
+        .some((row) => row.startsWith("session="));
+      if (!hasSession) {
+        startAutoRedirect("Session terminated. Redirecting to login...");
+      } else {
+        verifyOrg();
       }
     };
-    verifyOrg();
+
+    window.addEventListener("sessionChanged", handleSessionChanged);
+    window.addEventListener("storage", handleSessionChanged);
+
+    return () => {
+      window.removeEventListener("sessionChanged", handleSessionChanged);
+      window.removeEventListener("storage", handleSessionChanged);
+    };
   }, []);
+
+  // Handle countdown for auto-redirect
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      router.replace("/pages/auth/login/organisation?redirect=/pages/organisation/dashboard");
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [countdown, router]);
 
   if (loading) {
     return (
@@ -69,13 +118,21 @@ export const OrgDashboardComp: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
             Authentication Required
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
             {authError || "Please sign in to access your organization dashboard and API credentials."}
           </p>
+
+          {countdown !== null && (
+            <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-semibold border border-amber-200 dark:border-amber-800">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Redirecting to sign in in {countdown}s...
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/pages/auth/login/organisation">
+            <Link href="/pages/auth/login/organisation?redirect=/pages/organisation/dashboard">
               <Button variant="success" size="md">
-                Organisation Sign In
+                Sign In Now
               </Button>
             </Link>
             <Link href="/pages/auth/sign-up/organisation">

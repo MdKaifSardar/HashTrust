@@ -51,11 +51,21 @@ export default function LayoutComponent({
   }
 
   const handleLogout = () => {
+    // 1. Wipe Cookie across all possible path variations
+    document.cookie = "session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
     document.cookie = "session=; path=/; max-age=0; SameSite=Strict; Secure";
+
+    // 2. Dispatch cross-tab and cross-component broadcast events
     window.dispatchEvent(new Event("sessionChanged"));
-    window.dispatchEvent(new Event("logoutConfirmed")); // Notify SideMenu to close modal if needed
+    window.dispatchEvent(new Event("logoutConfirmed"));
+
+    // 3. Clear sensitive storage
+    localStorage.removeItem("last_session_role");
+
     setShowLogoutModal(false);
-    router.push("/");
+
+    // 4. Hard Page Reload & Redirect (Guarantees all in-memory React state is destroyed)
+    window.location.href = "/";
   };
 
   const isAuthPage = pathname?.includes("/auth");
