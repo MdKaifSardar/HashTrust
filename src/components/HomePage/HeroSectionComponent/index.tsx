@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FiShield, FiArrowRight, FiCheckCircle, FiLock, FiCpu, FiExternalLink } from "react-icons/fi";
+import { FiShield, FiArrowRight, FiCheckCircle, FiLock, FiCpu } from "react-icons/fi";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
@@ -180,11 +180,11 @@ export const HeroSectionComponent = () => {
               Gas-efficient Keccak256 proof anchor
             </span>
             <Link
-              href="/pages/demo"
+              href="/pages/auth/sign-up/user"
               className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 font-medium hover:underline"
             >
-              <span>Test interactive demo</span>
-              <FiExternalLink size={12} />
+              <span>Start live verification</span>
+              <FiArrowRight size={12} />
             </Link>
           </div>
         </div>

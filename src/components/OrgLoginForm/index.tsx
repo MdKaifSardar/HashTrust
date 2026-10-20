@@ -8,8 +8,16 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { FiMail, FiLock, FiArrowLeft, FiBriefcase } from "react-icons/fi";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { useSearchParams } from "next/navigation";
 
 export const OrgLoginForm = () => {
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get("redirect");
+  const targetRedirect =
+    rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : "/pages/organisation/dashboard";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +32,7 @@ export const OrgLoginForm = () => {
         document.cookie = `session=${res.sessionCookie}; path=/; max-age=${60 * 60 * 24 * 5}; SameSite=Lax${isSecure ? "; Secure" : ""}`;
         toast.success(res.message);
         setTimeout(() => {
-          window.location.href = "/pages/organisation/dashboard";
+          window.location.href = targetRedirect;
         }, 1000);
       } else {
         toast.error(res.message || "Login failed.");

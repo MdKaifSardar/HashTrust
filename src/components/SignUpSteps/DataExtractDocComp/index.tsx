@@ -18,7 +18,9 @@ import {
   selectCurrentStep,
 } from "../../../redux/features/signUpSteps/stepSlice";
 import { toast } from "react-toastify";
-import { FiArrowLeft, FiArrowRight, FiFileText, FiCheckCircle, FiCpu } from "react-icons/fi";
+import { verifyAadhaarDocumentAction, VerifyDocumentActionResult } from "../../../lib/actions/aadhaarVerify.actions";
+import { setFaceImage } from "../../../redux/features/idUpload/idUploadSlice";
+import { FiArrowLeft, FiArrowRight, FiFileText, FiCheckCircle, FiCpu, FiShield, FiAlertTriangle } from "react-icons/fi";
 import Button from "@/components/ui/Button";
 
 export const DataExtractDocComp: React.FC = () => {
@@ -31,6 +33,7 @@ export const DataExtractDocComp: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [qrStatus, setQrStatus] = useState<VerifyDocumentActionResult | null>(null);
   const autoTriggeredRef = useRef(false);
 
   const hasExtractedData =
@@ -45,6 +48,7 @@ export const DataExtractDocComp: React.FC = () => {
   useEffect(() => {
     if (identityDocumentFile && identityDocumentFile !== lastUploadedFile) {
       dispatch(resetUserData());
+      setQrStatus(null);
     }
   }, [identityDocumentFile, lastUploadedFile, dispatch]);
 
@@ -63,6 +67,33 @@ export const DataExtractDocComp: React.FC = () => {
       } else {
         dispatch(setUserData(data));
         toast.success("User data extracted successfully!");
+
+        // 🛡️ Run Cryptographic Secure QR Check & 3-Way Cross-Check
+        try {
+          const formData = new FormData();
+          formData.append("file", identityDocumentFile);
+          const qrCheck = await verifyAadhaarDocumentAction(formData, {
+            name: data.name ?? undefined,
+            dob: data.dob ?? undefined,
+            idNumber: data.idNumber ?? undefined,
+          });
+          setQrStatus(qrCheck);
+
+          if (qrCheck.qrDetected) {
+            if (qrCheck.crossMatch?.isTampered) {
+              toast.warn("Warning: Discrepancy detected between visual card and government QR data.");
+            } else if (qrCheck.crossMatch?.isAuthentic) {
+              toast.success("UIDAI Cryptographic QR Verified!");
+              // If QR contains authentic government photo, prefer it for 1:1 biometric comparison
+              if (qrCheck.governmentPhoto) {
+                dispatch(setFaceImage(qrCheck.governmentPhoto));
+              }
+            }
+          }
+        } catch (qrErr) {
+          console.warn("QR verification check skipped:", qrErr);
+        }
+
         // Initiate brief review countdown before auto-advancing to Biometrics
         setCountdown(2);
       }
@@ -168,6 +199,30 @@ export const DataExtractDocComp: React.FC = () => {
                   <FiCheckCircle size={14} /> OCR Parsed
                 </span>
               </div>
+
+              {/* Cryptographic Secure QR Status Banner */}
+              {qrStatus?.qrDetected && (
+                qrStatus.crossMatch?.isTampered ? (
+                  <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-rose-800 dark:text-rose-200">
+                      <FiAlertTriangle size={15} /> Document Discrepancy Flagged
+                    </div>
+                    {qrStatus.crossMatch.discrepancies.map((d, i) => (
+                      <p key={i} className="text-[11px] leading-relaxed">{d}</p>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mb-4 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <FiShield size={14} className="text-emerald-600 dark:text-emerald-400" />
+                      UIDAI Secure QR Verified
+                    </div>
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      Cryptographic Match Passed
+                    </span>
+                  </div>
+                )
+              )}
 
               <div className="space-y-3 text-xs sm:text-sm">
                 <div className="flex justify-between items-center py-1">

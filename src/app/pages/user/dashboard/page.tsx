@@ -18,44 +18,93 @@ import {
 } from "react-icons/fi";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
 
 const DashboardPage: React.FC = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  const startAutoRedirect = (errorMsg: string) => {
+    setUser(null);
+    setAuthError(errorMsg);
+    setCountdown(3);
+  };
+
+  const verifyUser = async () => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const sessionCookie = document.cookie
+        .split(";")
+        .map((row) => row.trim())
+        .find((row) => row.startsWith("session="))
+        ?.slice("session=".length);
+
+      if (!sessionCookie) {
+        startAutoRedirect("Authentication required. No active session found.");
+        return;
+      }
+
+      const userRes = await authenticateUserWithSessionCookie(sessionCookie);
+      if (userRes.ok && userRes.user) {
+        setUser(userRes.user);
+      } else {
+        const errorMsg = userRes.message || "Failed to fetch user details.";
+        toast.error(errorMsg);
+        startAutoRedirect(errorMsg);
+      }
+    } catch (e: any) {
+      const errorMsg = e?.message || "Authentication failed.";
+      toast.error(errorMsg);
+      startAutoRedirect(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const verifyUser = async () => {
-      setLoading(true);
-      setAuthError(null);
-      try {
-        const sessionCookie = document.cookie
-          .split(";")
-          .map((row) => row.trim())
-          .find((row) => row.startsWith("session="))
-          ?.slice("session=".length);
+    verifyUser();
 
-        const userRes = await authenticateUserWithSessionCookie(sessionCookie);
-        if (userRes.ok && userRes.user) {
-          setUser(userRes.user);
-        } else {
-          setUser(null);
-          const errorMsg = userRes.message || "Failed to fetch user details.";
-          setAuthError(errorMsg);
-          toast.error(errorMsg);
-        }
-      } catch (e: any) {
-        const errorMsg = e?.message || "Authentication failed.";
-        setUser(null);
-        setAuthError(errorMsg);
-        toast.error(errorMsg);
-      } finally {
-        setLoading(false);
+    // Multi-tab and cross-component session synchronization
+    const handleSessionChanged = () => {
+      const hasSession = document.cookie
+        .split(";")
+        .map((row) => row.trim())
+        .some((row) => row.startsWith("session="));
+      if (!hasSession) {
+        startAutoRedirect("Session terminated. Redirecting to login...");
+      } else {
+        verifyUser();
       }
     };
-    verifyUser();
+
+    window.addEventListener("sessionChanged", handleSessionChanged);
+    window.addEventListener("storage", handleSessionChanged);
+
+    return () => {
+      window.removeEventListener("sessionChanged", handleSessionChanged);
+      window.removeEventListener("storage", handleSessionChanged);
+    };
   }, []);
+
+  // Handle countdown for auto-redirect
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      router.replace("/pages/auth/login/user?redirect=/pages/user/dashboard");
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [countdown, router]);
 
   const handleCopyProof = () => {
     if (!user) return;
@@ -137,13 +186,21 @@ const DashboardPage: React.FC = () => {
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
             Authentication Required
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-6">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">
             {authError || "Please sign in to view your verified self-sovereign identity credential."}
           </p>
+
+          {countdown !== null && (
+            <div className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-semibold border border-amber-200 dark:border-amber-800">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              Redirecting to sign in in {countdown}s...
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/pages/auth/login/user">
+            <Link href="/pages/auth/login/user?redirect=/pages/user/dashboard">
               <Button variant="primary" size="md">
-                Personal Sign In
+                Sign In Now
               </Button>
             </Link>
             <Link href="/pages/auth/sign-up/user">

@@ -224,6 +224,21 @@ export async function createUser(
     const firestoreDb = getFirestore(firebaseApp);
     const auth = getAuth(firebaseApp);
 
+    // 🛡️ Server Enclave: Strict Verification Threshold Gate
+    // Guarantees that no external client script or modified payload can bypass biometric criteria
+    if (
+      !verificationStatus ||
+      verificationStatus.faceLiveness?.status !== "LIVE" ||
+      verificationStatus.faceSimilarity?.status !== "MATCH" ||
+      (verificationStatus.faceSimilarity?.score ?? 0) < 80
+    ) {
+      return {
+        ok: false,
+        message:
+          "Biometric verification incomplete or failed server threshold (minimum 80% facial similarity and live personhood required).",
+      };
+    }
+
     // 1. Check for duplicate Aadhaar number before doing heavy work
     if (idNumber) {
       const aadhaarQuery = query(

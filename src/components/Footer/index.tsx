@@ -53,16 +53,6 @@ export const Footer: React.FC = () => {
                   Blockchain Proof Anchors
                 </Link>
               </li>
-              <li>
-                <Link href="/pages/demo" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
-                  1:1 Face Similarity
-                </Link>
-              </li>
-              <li>
-                <Link href="/pages/demo-face-liveness" className="hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
-                  Silent Spoof Detection
-                </Link>
-              </li>
             </ul>
           </div>
 
