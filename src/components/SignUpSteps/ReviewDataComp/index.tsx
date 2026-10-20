@@ -97,26 +97,28 @@ export const ReviewDataComp: React.FC = () => {
         "user",
         userData.idNumber || ""
       );
-      setShowModal(false);
+
       if (result.ok && result.sessionCookie) {
         const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
         document.cookie = `session=${result.sessionCookie}; path=/; max-age=${
           60 * 60 * 24 * 5
         }; SameSite=Lax${isSecure ? "; Secure" : ""}`;
-        toast.success(result.message || "Identity proof created successfully!");
-        setTimeout(() => {
-          window.location.href = "/pages/user/dashboard";
-        }, 1000);
+        toast.success(result.message || "Identity proof created successfully! Redirecting...");
+        // Immediate 0ms redirect — keep submitting=true so UI remains permanently locked
+        window.location.href = "/pages/user/dashboard";
+        return;
       } else {
+        setShowModal(false);
         const msg = result.message || "Minting failed. Your data is preserved; please retry.";
         setSubmitError(msg);
         toast.error(msg);
+        setSubmitting(false);
       }
     } catch (e: any) {
+      setShowModal(false);
       const msg = "Failed to submit data: " + (e?.message || "Unknown error");
       setSubmitError(msg);
       toast.error(msg);
-    } finally {
       setSubmitting(false);
     }
   };
@@ -238,12 +240,13 @@ export const ReviewDataComp: React.FC = () => {
       </div>
 
       {/* Action Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={handlePrev}
           disabled={submitting}
           leftIcon={<FiArrowLeft size={16} />}
+          className="w-full xs:w-auto"
         >
           Back
         </Button>
@@ -253,8 +256,10 @@ export const ReviewDataComp: React.FC = () => {
           onClick={handleSubmit}
           isLoading={submitting}
           rightIcon={<FiCheckCircle size={18} />}
+          className="w-full xs:w-auto"
         >
-          Confirm & Mint Identity Proof
+          <span className="inline sm:hidden">Confirm & Mint</span>
+          <span className="hidden sm:inline">Confirm & Mint Identity Proof</span>
         </Button>
       </div>
 

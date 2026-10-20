@@ -191,12 +191,13 @@ export const CreatePasswordComp: React.FC = () => {
       </div>
 
       {/* Action Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex items-center justify-between">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10 flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={handlePrev}
           leftIcon={<FiArrowLeft size={16} />}
           disabled={validating}
+          className="w-full xs:w-auto"
         >
           Back
         </Button>
@@ -205,8 +206,16 @@ export const CreatePasswordComp: React.FC = () => {
           onClick={handleNext}
           disabled={!isValid || validating}
           rightIcon={<FiArrowRight size={16} />}
+          className="w-full xs:w-auto"
         >
-          {validating ? "Checking Email..." : "Review Data & Mint"}
+          {validating ? (
+            "Checking Email..."
+          ) : (
+            <>
+              <span className="inline sm:hidden">Review & Mint</span>
+              <span className="hidden sm:inline">Review Data & Mint</span>
+            </>
+          )}
         </Button>
       </div>
     </div>

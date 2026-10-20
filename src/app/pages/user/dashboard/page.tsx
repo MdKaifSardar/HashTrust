@@ -71,8 +71,58 @@ const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
-        <Loader />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 py-10 px-4 sm:px-6 lg:px-8 animate-pulse">
+        <div className="max-w-5xl mx-auto space-y-8">
+          {/* Top Header Skeleton */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200/80 dark:border-white/10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-60 sm:w-72 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                <div className="h-6 w-28 bg-emerald-100 dark:bg-emerald-950/50 rounded-full" />
+              </div>
+              <div className="h-4 w-64 bg-slate-200/70 dark:bg-slate-800/60 rounded-lg" />
+            </div>
+            <div className="h-9 w-36 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+          </div>
+
+          {/* Digital Identity Passport Card Skeleton */}
+          <div className="glass-panel-elevated rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500/50 via-cyan-400/50 to-emerald-400/50" />
+
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+              {/* Avatar Skeleton */}
+              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-3xl bg-slate-200 dark:bg-slate-800 shrink-0 border-2 border-slate-300 dark:border-slate-700" />
+
+              {/* Core Info Skeleton */}
+              <div className="flex-1 w-full space-y-4">
+                <div className="space-y-2 text-center md:text-left">
+                  <div className="h-7 w-48 mx-auto md:mx-0 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+                  <div className="h-4 w-60 mx-auto md:mx-0 bg-slate-200/70 dark:bg-slate-800/60 rounded-lg" />
+                </div>
+                <div className="flex gap-2 justify-center md:justify-start">
+                  <div className="h-6 w-24 bg-slate-200 dark:bg-slate-800 rounded-full" />
+                  <div className="h-6 w-32 bg-slate-200 dark:bg-slate-800 rounded-full" />
+                </div>
+                {/* Grid fields skeleton */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/70 dark:border-white/10">
+                  <div className="h-14 bg-slate-100 dark:bg-slate-900 rounded-xl" />
+                  <div className="h-14 bg-slate-100 dark:bg-slate-900 rounded-xl" />
+                  <div className="h-14 bg-slate-100 dark:bg-slate-900 rounded-xl" />
+                  <div className="h-14 bg-slate-100 dark:bg-slate-900 rounded-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Blockchain Proof Ledger Skeleton */}
+          <div className="glass-panel-elevated rounded-3xl p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="h-5 w-44 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+              <div className="h-4 w-28 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+            </div>
+            <div className="h-16 bg-slate-100 dark:bg-slate-900 rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }

@@ -3,8 +3,7 @@
 import React from "react";
 import UploadIDComp from "../SignUpSteps/UploadIDComp";
 import DataExtractDocComp from "../SignUpSteps/DataExtractDocComp";
-import TakeUserImagesComp from "../SignUpSteps/TakeUserImagesComp";
-import FaceSimilarityCheck from "../SignUpSteps/FaceSimilarityCheck";
+import BiometricVerificationComp from "../SignUpSteps/BiometricVerificationComp";
 import CreatePasswordComp from "../SignUpSteps/CreatePasswordComp";
 import ReviewDataComp from "../SignUpSteps/ReviewDataComp";
 import { useSelector } from "react-redux";
@@ -22,14 +21,13 @@ export const SignUpFormComponent: React.FC = () => {
       <MobileTopProgressBar />
 
       {/* Main Step Workspace */}
-      <main className="flex-1 ml-0 sm:ml-[30%] lg:ml-[22%] w-full sm:w-[calc(100%-30%)] lg:w-[calc(100%-22%)] min-h-screen p-4 sm:p-8 lg:p-12 flex flex-col justify-center items-center">
-        <div className="w-full max-w-2xl glass-panel-elevated p-6 sm:p-10 rounded-3xl relative">
+      <main className="flex-1 ml-0 sm:ml-[30%] lg:ml-[22%] w-full sm:w-[calc(100%-30%)] lg:w-[calc(100%-22%)] min-h-screen p-3 xs:p-4 sm:p-8 lg:p-12 pb-24 sm:pb-12 flex flex-col justify-center items-center">
+        <div className="w-full max-w-2xl glass-panel-elevated p-4 xs:p-6 sm:p-10 rounded-2xl sm:rounded-3xl relative">
           {currentStep === 0 && <UploadIDComp />}
           {currentStep === 1 && <DataExtractDocComp />}
-          {currentStep === 2 && <TakeUserImagesComp />}
-          {currentStep === 3 && <FaceSimilarityCheck />}
-          {currentStep === 4 && <CreatePasswordComp />}
-          {currentStep === 5 && <ReviewDataComp />}
+          {currentStep === 2 && <BiometricVerificationComp />}
+          {currentStep === 3 && <CreatePasswordComp />}
+          {currentStep === 4 && <ReviewDataComp />}
         </div>
       </main>
     </div>
